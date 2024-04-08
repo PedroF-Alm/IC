@@ -2,7 +2,7 @@
 #include <time.h>
 #include "./include/Mult.h"
 
-#define N 10000
+#define N 200
 #define MAX 20
 #define MIN 0
 
@@ -15,6 +15,7 @@ void worker(int, int);
 
 int main(int argc, char **argv)
 {
+
     srand(0);
 
     int min = MIN, max = MAX;
@@ -29,8 +30,8 @@ int main(int argc, char **argv)
     {
         for (int j = 0; j < N; j++)
         {
-            A[i][j] = (int) ((double) rand() / RAND_MAX * (max - min + 1)) + min;
-            B[i][j] = (int) ((double) rand() / RAND_MAX * (max - min + 1)) + min;
+            A[i][j] = (int)((double)rand() / RAND_MAX * (max - min + 1)) + min;
+            B[i][j] = (int)((double)rand() / RAND_MAX * (max - min + 1)) + min;
         }
     }
 
