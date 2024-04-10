@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1)
-project(matrix_multiply LANGUAGES CXX C)
+project(matrix_det LANGUAGES CXX C)
 
 # Set the names of the executable
-SET(EXE_NAME mamult)
+SET(EXE_NAME matdet)
 
 #MPI-----------------------
 find_package(MPI)

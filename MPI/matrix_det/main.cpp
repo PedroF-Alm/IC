@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-#include "./include/Mult.h"
+#include <mpi.h>
 
 #define N 200
 #define MAX 20
@@ -12,6 +13,7 @@ int A[N][N] = {0}, B[N][N] = {0}, C[N][N] = {0};
 
 void master(int);
 void worker(int, int);
+int determinant(int, int);
 
 int main(int argc, char **argv)
 {
@@ -110,3 +112,66 @@ void worker(int world_rank, int world_size)
     for (int i = world_rank - 1; i < N; i += world_size - 1)
         MPI_Send(C[i], N, MPI_INT, 0, 3, MPI_COMM_WORLD); 
 }
+
+
+// Function to calculate the determinant
+// of a matrix
+int determinant(int **matrix, int size)
+{
+    int det = 0;
+    int sign = 1;
+
+    // Base Case
+    if (size == 1)
+    {
+        det = matrix[0][0];
+    }
+    else if (size == 2)
+    {
+        det = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
+    }
+
+    // Perform the Laplace Expansion
+    else
+    {
+        for (int i = 0; i < size; i++)
+        {
+
+            // Stores the cofactor matrix
+            int **cofactor = new int *[size - 1];
+            for (int j = 0; j < size - 1; j++)
+            {
+                cofactor[j] = new int[size - 1];
+            }
+            int sub_i = 0, sub_j = 0;
+            for (int j = 1; j < size; j++)
+            {
+                for (int k = 0; k < size; k++)
+                {
+                    if (k == i)
+                    {
+                        continue;
+                    }
+                    cofactor[sub_i][sub_j] = matrix[j][k];
+                    sub_j++;
+                }
+                sub_i++;
+                sub_j = 0;
+            }
+
+            // Update the determinant value
+            det += sign * matrix[0][i] * determinant(cofactor, size - 1);
+            sign = -sign;
+            for (int j = 0; j < size - 1; j++)
+            {
+                delete[] cofactor[j];
+            }
+            delete[] cofactor;
+        }
+    }
+
+    // Return the final determinant value
+    return det;
+}
+
+int chio(double **matrix, int N)
