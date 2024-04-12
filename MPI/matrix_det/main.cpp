@@ -9,15 +9,12 @@
 
 //#define PRINT
 
-int A[N][N] = {0}, B[N][N] = {0}, C[N][N] = {0};
+int **matrix = NULL;
 
-void master(int);
-void worker(int, int);
-int determinant(int, int);
+int determinant(int**, int, int, int);
 
 int main(int argc, char **argv)
 {
-
     srand(0);
 
     int min = MIN, max = MAX;
@@ -28,13 +25,12 @@ int main(int argc, char **argv)
         max = atoi(argv[2]);
     }
 
+    matrix = (int**) calloc(N, sizeof(int*));
     for (int i = 0; i < N; i++)
     {
+        matrix[i] = (int*) calloc(N, sizeof(int));
         for (int j = 0; j < N; j++)
-        {
-            A[i][j] = (int)((double)rand() / RAND_MAX * (max - min + 1)) + min;
-            B[i][j] = (int)((double)rand() / RAND_MAX * (max - min + 1)) + min;
-        }
+            matrix[i][j] = (int)((double)rand() / RAND_MAX * (max - min + 1)) + min;
     }
 
     // MPI
@@ -54,72 +50,28 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
     // ____________________________________________
 
-    if (world_rank == 0)
-    {        
-        master(world_size);
-    }
-    else
-    {
-        worker(world_rank, world_size);
-    }
-
+    int det = determinant(matrix, N, world_rank, world_size);
+    printf("%d\n", det);
     // ____________________________________________
 
     MPI_Finalize();
 
+    for (int i = 0; i < N; i++)
+        free(matrix[i]);
+    free(matrix);
+
     return 0;
 }
 
-void master(int world_size)
-{
-    printf("Running on %d processes...\n", world_size);
-    
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            MPI_Send(&i, 1, MPI_INT, 1 + i % (world_size - 1), 1, MPI_COMM_WORLD);
-            MPI_Send(&j, 1, MPI_INT, 1 + i % (world_size - 1), 2, MPI_COMM_WORLD);            
-        }
-    }    
-
-    for (int i = 0; i < N; i++)
-    {
-        MPI_Recv(C[i], N, MPI_INT, 1 + i % (world_size - 1), 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-
-    #ifdef PRINT
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < N; j++)
-                printf("A[%d][%d] = %d\tB[%d][%d] = %d\tC[%d][%d] = %d\n", i, j, A[i][j], j, i, B[i][j], i, j, C[i][j]);
-    #endif
-}
-
-void worker(int world_rank, int world_size)
-{
-    int x, y;
-
-    for (int i = world_rank - 1; i < N; i += world_size - 1)
-    {        
-        for (int j = 0; j < N; j++)
-        {
-            MPI_Recv(&x, 1, MPI_INT, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            MPI_Recv(&y, 1, MPI_INT, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            C[i][j] = multiply(A[x], B[y], N);            
-        }
-    }
-
-    for (int i = world_rank - 1; i < N; i += world_size - 1)
-        MPI_Send(C[i], N, MPI_INT, 0, 3, MPI_COMM_WORLD); 
-}
-
-
 // Function to calculate the determinant
 // of a matrix
-int determinant(int **matrix, int size)
+int determinant(int **matrix, int size, int world_rank, int world_size)
 {
-    int det = 0;
+    int det = 0, aux = 0;
     int sign = 1;
+
+    if (world_rank != 0)
+        MPI_Recv(&matrix, size*size, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     // Base Case
     if (size == 1)
@@ -159,19 +111,36 @@ int determinant(int **matrix, int size)
                 sub_j = 0;
             }
 
-            // Update the determinant value
-            det += sign * matrix[0][i] * determinant(cofactor, size - 1);
+
+            if (world_rank == 0) {
+                MPI_Send(&cofactor, (size - 1) * (size - 1), MPI_INT, i % world_size + 1, 0, MPI_COMM_WORLD);
+            }
+            else {
+                det += sign * matrix[0][i] * determinant(cofactor, size - 1, world_rank, world_size); 
+            }
             sign = -sign;
+
             for (int j = 0; j < size - 1; j++)
             {
                 delete[] cofactor[j];
             }
             delete[] cofactor;
         }
+
+        if (world_rank == 0)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                MPI_Recv(&aux, i % world_size - 1, MPI_INT, i, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                det += aux;
+            }
+        }
+        else
+        {
+            MPI_Send(&det, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
+        }
     }
 
     // Return the final determinant value
     return det;
 }
-
-int chio(double **matrix, int N)
