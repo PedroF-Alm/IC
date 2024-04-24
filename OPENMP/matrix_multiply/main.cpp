@@ -13,7 +13,7 @@
 #define MIN 1
 #define MAX 10
 
-// #define PARALLEL 1
+#define PARALLEL 1
 // #define GENERATE 1
 // #define PRINT 1
 
@@ -60,14 +60,18 @@ matrix2D multiply(matrix2D A, matrix2D B)
     if (A.get_m() != B.get_n())
         return C;
 
-    int i, j, k;
+    int i, j, k, aux = 0;
     #ifdef PARALLEL
-        #pragma omp parallel for private(i, j, k) shared(A, B, C)
+        #pragma omp parallel for collapse(2) default(none) private(i, j, k) shared(A, B, C) reduction(+:aux)
     #endif
     for (i = 0; i < C.get_n(); i++)
         for (j = 0; j < C.get_m(); j++)
-            for (k = 0; k < A.get_m(); k++)
-                C.set(i, j, C.get(i, j) + A.get(i, k) * B.get(k, j));
+        {
+            int aux = 0;
+            for (k = 0; k < A.get_m(); k++)                
+                aux += A.get(i, k) * B.get(k, j);
+            C.set(i, j, aux);
+        }
 
     return C;
 }
@@ -76,8 +80,12 @@ void generate_mat(matrix2D M, int min, int max)
 {
     srand(0);
 
-    for (int i = 0; i < M.get_n(); i++)
-        for (int j = 0; j < M.get_m(); j++)
+    int i, j;
+    #ifdef PARALLEL
+        #pragma omp parallel for collapse(2) private(i, j) shared(M)
+    #endif
+    for (i = 0; i < M.get_n(); i++)
+        for (j = 0; j < M.get_m(); j++)
             M.set(i, j, rand() % (max - min) + min);
 }
 
