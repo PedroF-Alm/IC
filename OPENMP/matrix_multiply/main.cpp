@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <omp.h>
-// #include <chrono>
 
-#define N 1000
+#define N 10000
 
 // #define PRINT
 
@@ -16,11 +15,9 @@ int main()
         for (int j = 0; j < N; j++)
             A[i][j] = 1, B[i][j] = 1, C[i][j] = 1;
 
-    // auto begin = std::chrono::high_resolution_clock::now();
-
     int i, j, k, aux = 0;
     
-    #pragma omp parallel for private(i, j, k)     
+    #pragma omp parallel for private(i, j, k) 
     for (i = 0; i < N; i++)
         for (j = 0; j < N; j++)
         {
@@ -29,11 +26,6 @@ int main()
                 aux += A[i][k] * B[k][j];
             C[i][j] = aux;
         }
-
-    // auto end = std::chrono::high_resolution_clock::now();
-
-    // auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-    // printf("t = %fs\n", duration / 1000.0);
 
     #ifdef PRINT
         for (int i = 0; i < N; i++)

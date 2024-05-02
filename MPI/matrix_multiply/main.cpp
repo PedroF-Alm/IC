@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <mpi.h>
 
-#define N 1000
+#define N 10000
 
 // #define PRINT
 
 int A[N][N] = {0}, B[N][N] = {0}, C[N][N] = {0};
 
-int main(int argc, char **argv)
+int main()
 {
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++)
-            A[i][j] = 1, B[i][j] = 1;
+            A[i][j] = 1, B[i][j] = 1, C[i][j] = 1;
 
     // MPI
     MPI_Init(NULL, NULL);
@@ -19,12 +19,12 @@ int main(int argc, char **argv)
     int world_size;
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-    if (world_size == 1)
-    {
-        MPI_Finalize();
-        printf("Cannot run on only one process!\n");
-        return 0;
-    }
+    // if (world_size == 1)
+    // {
+    //     MPI_Finalize();
+    //     printf("Cannot run on only one process!\n");
+    //     return 0;
+    // }
 
     int world_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -33,20 +33,23 @@ int main(int argc, char **argv)
     if (world_rank == 0)
     {        
         printf("Running on %d processes...\n", world_size);
-        
+
         for (int i = 0; i < N; i++)
         {
             for (int j = 0; j < N; j++)
             {
-                int aux[2] = {i, j};
-                MPI_Send(&aux, 2, MPI_INT, 1 + (world_size - 1) * i / N, 1, MPI_COMM_WORLD);        
+                // int aux[2] = {i, j};
+                // MPI_Send(&aux, 2, MPI_INT, 1 + i % (world_size - 1), 1, MPI_COMM_WORLD);        
+                C[i][j] = 0;
+                for (int k = 0; k < N; k++)
+                    C[i][j] += A[i][k] * B[j][k];
             }
         }    
 
-        for (int i = 0; i < N; i++)
-        {
-            MPI_Recv(C[i], N, MPI_INT, 1 + (world_size - 1) * i / N, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
+        // for (int i = 0; i < N; i++)
+        // {
+        //     MPI_Recv(C[i], N, MPI_INT, 1 + i % (world_size - 1), 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // }
 
         #ifdef PRINT
             for (int i = 0; i < N; i++)
@@ -56,7 +59,7 @@ int main(int argc, char **argv)
     }
     else
     {
-        for (int i = (world_rank - 1) * N / (world_size - 1); i < N / (world_size - 1) * world_rank; i++)
+        for (int i = world_rank - 1; i < N; i += world_size - 1)
         {        
             for (int j = 0; j < N; j++)
             {
@@ -65,14 +68,13 @@ int main(int argc, char **argv)
                 x = aux[0];
                 y = aux[1];
                 C[i][j] = 0;
-
                 for (int k = 0; k < N; k++)
                     C[i][j] += A[x][k] * B[y][k];
             }
         }
 
-        for (int i = (world_rank - 1) * N / world_size; i < N / (world_size - 1) * world_rank; i++)
-            MPI_Send(C[i], N, MPI_INT, 0, 3, MPI_COMM_WORLD); 
+        for (int i = world_rank - 1; i < N;  i += world_size - 1)
+            MPI_Send(C[i], N, MPI_INT, 0, 2, MPI_COMM_WORLD); 
     }
 
     // ____________________________________________
