@@ -203,18 +203,11 @@ private:
     void saveVariables();
     void saveCurrents();
     void saveExtras();
-    void sendTUnitsToCaRU();
-    void getTUnitsFromMyocite(int* begin, int* end);
-    void sendDataToCaRU();
-    void getDataFromMyocyte(mreal* V, mreal* Nai, bool* save, int my_tUnits);
-    void getDataFromCaRU();
-    void sendDataToMyocyte(int my_tUnits);
-    void sendFinishToCaRU();
 
     int n_LCC, n_RyR;
     mreal t;
     vector<CaRU*> ca_units;
-    vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
+    mreal caru_ical, caru_inaca, caru_ibca, caru_ipca;
     vetor y = vetor(_Myocyte_numODE_);
     vetor dy = vetor(_Myocyte_numODE_);
     vetor save_t;

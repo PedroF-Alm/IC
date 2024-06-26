@@ -160,145 +160,98 @@ void Myocyte::solveStep(mreal dt, mreal t){
 }
 
 void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate){
-    
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-    world_size--;
-
-    int world_rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-
-    if(world_rank == 0){
-        cout<<"Creating output dir."<<endl;
-        string command = "rm -r ";
-        if(isPathExist(outputFilePath)){
-            command += outputFilePath;
-            system(command.c_str());
-        }
-        command = "mkdir " + outputFilePath;
+    cout << "Creating output dir." << endl;
+    string command = "rm -r ";
+    if (isPathExist(outputFilePath)){
+        command += outputFilePath;
         system(command.c_str());
-        cout<<"Output dir created."<<endl;
-        command = "mkdir " + outputCaUnitsFilePath;
-        system(command.c_str());
-        cout<<"CaRU units dir created."<<endl;
-        cout<<"Beginning solve Myocyte model."<<endl;
-        t = t0;
-
-        sendTUnitsToCaRU();
-        caru_ical = vetor(world_size);
-        caru_inaca = vetor(world_size);
-        caru_ibca = vetor(world_size);
-        caru_ipca = vetor(world_size);
-
-        for(int c=0; t<tF; c++){
-            toSave = (saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0);
-            if(printRate > 0.0 and c%(int)((1.0/printRate)) == 0) cout<<"Grid: "<<xUnits<<"x"<<yUnits<<"\t n_LCC: "<<n_LCC<<"\t"<<"Time (ms):"<<t<<endl;
-            if(toSave){
-                save_t.push_back(t);
-                save_y.push_back(y);
-            }
-
-            sendDataToCaRU();
-            getDataFromCaRU();
-            solveStep(dt,t);
-            CaRU::applyDiffusions(dt);
-            
-            if(toSave){
-                vetor curs;
-                curs.push_back(I_K1);
-                curs.push_back(I_to);
-                curs.push_back(I_Kr);
-                curs.push_back(I_Ks);
-                curs.push_back(I_CaL);
-                curs.push_back(I_NaK);
-                curs.push_back(I_Na);
-                curs.push_back(I_bNa);
-                curs.push_back(I_NaCa);
-                curs.push_back(I_bCa);
-                curs.push_back(I_pK);
-                curs.push_back(I_pCa);
-                curs.push_back(I_Stim);
-                save_c.push_back(curs);
-
-                CaRU::saveCaiDiffMatrix(outputCaUnitsFilePath,t);
-                CaRU::saveCaSRDiffMatrix(outputCaUnitsFilePath,t);
-            }
-            // if(saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0){
-            //     vetor extras;
-            //     save_e.push_back(extras);
-            // }
-            t += dt;
-        }
-        sendFinishToCaRU();
-        cout<<"Fineshed solving."<<endl;
-        if(saveRate > 0.0){
-            cout<<"Saving variables results."<<endl;
-            saveVariables();
-            cout<<"Fineshed saving."<<endl;
-            cout<<"Saving Currents results."<<endl;
-            saveCurrents();
-            cout<<"Fineshed saving."<<endl;
-            cout<<"Saving Extra results."<<endl;
-            saveExtras();
-            cout<<"Fineshed saving."<<endl;
-            cout<<"Plotting results."<<endl;
-            generatePlotFile();
-            command = "(cd "+outputFilePath+"/;python plot.py)";
-            system(command.c_str());
-            command = "(cd "+outputCaUnitsFilePath+"/;python plot.py)";
-            system(command.c_str());
-            cout<<"Fineshed plotting."<<endl;
-        }
-
-        cout<<"Core "<<world_rank<<" -> The End."<<endl;
     }
-    else if(world_rank != 0){
-        int my_begin, my_end;
-        getTUnitsFromMyocite(&my_begin,&my_end);
-        int my_tUnits = my_end - my_begin;
-        for(int c=my_begin; c<my_end; c++) ca_units.push_back(new CaRU(c));
-        
-        // for(int c=my_begin; c<my_end; c++){
-        //     cout<<"Rank: "<<world_rank<<"\t"<<"CaRU Id: ";
-        //     ca_units.at(c-my_begin)->printId();
+    command = "mkdir " + outputFilePath;
+    system(command.c_str());
+    cout << "Output dir created." << endl;
+    command = "mkdir " + outputCaUnitsFilePath;
+    system(command.c_str());
+    cout << "CaRU units dir created." << endl;
+    cout << "Beginning solve Myocyte model." << endl;
+    t = t0;
+
+    caru_ical = 0.0;
+    caru_inaca = 0.0;
+    caru_ibca = 0.0;
+    caru_ipca = 0.0;
+
+    for (int c = 0; c < tUnits; c++) ca_units.push_back(new CaRU(c));
+
+    for (int c = 0; t < tF; c++){
+        toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
+        if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
+            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << endl;
+        if (toSave){
+            save_t.push_back(t);
+            save_y.push_back(y);
+        }
+
+        if (Ith(y,_V_) > -0.5e3) {
+            CaRU::setV(Ith(y,_V_));
+            CaRU::setNai(Ith(y,_Nai_));
+            
+            for (int c = 0; c < tUnits; c++) {              
+                ca_units.at(c)->solveStep(dt);
+            }            
+        }
+                
+        solveStep(dt, t);
+        CaRU::applyDiffusions(dt);
+
+        if (toSave){
+            vetor curs;
+            curs.push_back(I_K1);
+            curs.push_back(I_to);
+            curs.push_back(I_Kr);
+            curs.push_back(I_Ks);
+            curs.push_back(I_CaL);
+            curs.push_back(I_NaK);
+            curs.push_back(I_Na);
+            curs.push_back(I_bNa);
+            curs.push_back(I_NaCa);
+            curs.push_back(I_bCa);
+            curs.push_back(I_pK);
+            curs.push_back(I_pCa);
+            curs.push_back(I_Stim);
+            save_c.push_back(curs);
+
+            CaRU::saveCaiDiffMatrix(outputCaUnitsFilePath, t);
+            CaRU::saveCaSRDiffMatrix(outputCaUnitsFilePath, t);
+        }
+        // if(saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0){
+        //     vetor extras;
+        //     save_e.push_back(extras);
         // }
-
-        while(true){
-            mreal V,Nai;
-            getDataFromMyocyte(&V,&Nai,&toSave,my_tUnits);
-
-            if(V <= -0.5e3) break;
-
-            CaRU::setV(V);
-            CaRU::setNai(Nai);
-            CaRU::setSave(toSave);
-
-            for(int c=0; c<my_tUnits; c++) ca_units.at(c)->solveStep(dt);
-            if(toSave) save_t.push_back(t);
-            
-            sendDataToMyocyte(my_tUnits);
-        }
-        if(saveRate > 0.0){
-            cout<<"Saving variables results."<<endl;
-            for(int c=0; c<my_tUnits; c++) ca_units.at(c)->saveVariables(save_t,outputCaUnitsFilePath);
-            cout<<"Fineshed saving."<<endl;
-            cout<<"Saving Currents results."<<endl;
-            for(int c=0; c<my_tUnits; c++) ca_units.at(c)->saveCurrents(save_t,outputCaUnitsFilePath);
-            cout<<"Fineshed saving."<<endl;
-            cout<<"Saving Extra results."<<endl;
-            for(int c=0; c<my_tUnits; c++) ca_units.at(c)->saveExtras(save_t,outputCaUnitsFilePath);
-            cout<<"Fineshed saving."<<endl;
-            // cout<<"Plotting results."<<endl;
-            // generatePlotFile();
-            // command = "(cd "+outputFilePath+"/;python plot.py)";
-            // system(command.c_str());
-            // command = "(cd "+outputCaUnitsFilePath+"/;python plot.py)";
-            // system(command.c_str());
-            // cout<<"Fineshed plotting."<<endl;
-        }
-
-        for(int c=0; c<my_tUnits; c++) delete ca_units.at(c);
-        cout<<"Core "<<world_rank<<" -> The End."<<endl;
+        t += dt;
     }
+
+    cout << "Fineshed solving." << endl;
+
+    if (saveRate > 0.0){
+        cout << "Saving variables results." << endl;
+        saveVariables();
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Currents results." << endl;
+        saveCurrents();
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Extra results." << endl;
+        saveExtras();
+        cout << "Fineshed saving." << endl;
+        cout << "Plotting results." << endl;
+        generatePlotFile();
+        command = "(cd " + outputFilePath + "/;python plot.py)";
+        system(command.c_str());
+        command = "(cd " + outputCaUnitsFilePath + "/;python plot.py)";
+        system(command.c_str());
+        cout << "Fineshed plotting." << endl;
+    }
+
+    for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
 }
 
 void Myocyte::solveAlgEquations(mreal dt, mreal t){
@@ -377,7 +330,7 @@ void Myocyte::calcDerivatives(mreal dt, mreal t){
 mreal Myocyte::getICaL(){
     mreal all_Curs = 0.0;
 
-    for(int core=0; core<world_size; core++) all_Curs += caru_ical.at(core);
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getICaL();
     all_Curs /= (mreal)tUnits;
 
     return all_Curs;
@@ -386,7 +339,7 @@ mreal Myocyte::getICaL(){
 mreal Myocyte::getIbCa(){
     mreal all_Curs = 0.0;
 
-    for(int core=0; core<world_size; core++) all_Curs += caru_ibca.at(core);
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getIbCa();
     all_Curs /= (mreal)tUnits;
 
     return all_Curs;
@@ -395,7 +348,7 @@ mreal Myocyte::getIbCa(){
 mreal Myocyte::getINaCa(){
     mreal all_Curs = 0.0;
 
-    for(int core=0; core<world_size; core++) all_Curs += caru_inaca.at(core);
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getINaCa();
     all_Curs /= (mreal)tUnits;
 
     return all_Curs;
@@ -404,7 +357,7 @@ mreal Myocyte::getINaCa(){
 mreal Myocyte::getIpCa(){
     mreal all_Curs = 0.0;
 
-    for(int core=0; core<world_size; core++) all_Curs += caru_ipca.at(core);
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getIpCa();
     all_Curs /= (mreal)tUnits;
 
     return all_Curs;
@@ -525,145 +478,6 @@ void Myocyte::saveExtras(){
     //     file.close();
     // }
     // else cout << "Unable to open file './output_extras.dat'"<<endl;
-}
-
-void Myocyte::sendTUnitsToCaRU(){
-    int tag = 0;
-    int aux_tUnits = tUnits;
-    int each_tUnit = int(aux_tUnits/world_size);
-    int id_begin = 0;
-    for(int core = 1; core < (world_size+1); core++){
-        int one_more = (aux_tUnits % world_size > 0) ? 1 : 0;
-        int core_tUnit = each_tUnit + one_more;
-        if (one_more == 1) aux_tUnits--;
-        
-        localTUnits.push_back(core_tUnit);
-
-        int data[2];
-        data[0] = id_begin;
-        data[1] = id_begin+core_tUnit;
-        id_begin = id_begin+core_tUnit;
-        MPI_Send(&data, 2, MPI_INT, core, tag, MPI_COMM_WORLD);
-    }
-}
-
-void Myocyte::getTUnitsFromMyocite(int* begin, int* end){
-    int tag = 0;
-    int data[2];
-    MPI_Recv(&data[0], 2, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    *begin = data[0];
-    *end = data[1];
-}
-
-void Myocyte::sendDataToCaRU(){
-    vetor data;
-    
-    int aux_CaRUId = 0;
-    for(int core = 1; core < (world_size+1); core++){
-        int aux_localTUnit = localTUnits.at(core-1);
-        data.clear();
-        data.resize(4+2*aux_localTUnit);
-
-        data.at(0) = Ith(y,_V_);
-        data.at(1) = Ith(y,_Nai_);
-        data.at(2) = (toSave) ? 1.0 : 0.0;
-        data.at(3) = t;
-
-        for(int u=0; u<aux_localTUnit; u++){
-            data.at(4+u) = CaRU::getCaiDiffValue(aux_CaRUId);
-            data.at(4+u+aux_localTUnit) = CaRU::getCaSRDiffValue(aux_CaRUId);
-            aux_CaRUId++;
-        }
-
-        MPI_Send(&data[0], data.size(), MPI_DOUBLE, core, 0, MPI_COMM_WORLD);
-    }
-
-    // MPI_Bcast(&data[0], data.size(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
-}
-
-void Myocyte::getDataFromMyocyte(mreal* V, mreal* Nai, bool* save, int my_tUnits){
-    int aux_localTUnit = my_tUnits;
-    vetor data; 
-    data.clear();
-    data.resize(4+2*aux_localTUnit);
-
-    MPI_Recv(&data[0], data.size(), MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    *V = data.at(0);
-    *Nai = data.at(1);
-    if(data.at(2) > 0.5) *save = true;
-    else *save = false;
-    t = data.at(3);
-
-    for(int u=0; u<aux_localTUnit; u++){
-        if(data.at(4+u) > -1.) ca_units.at(u)->setCai(data.at(4+u));
-        if(data.at(4+u+aux_localTUnit) > -1.) ca_units.at(u)->setCaSR(data.at(4+u+aux_localTUnit));
-    }
-}
-
-void Myocyte::sendDataToMyocyte(int my_tUnits){
-    int tag = 2;
-    vetor data;
-
-    for(int c=0; c<4; c++) data.push_back(0.);
-
-    for(int c=0; c<my_tUnits; c++){
-        data.at(0) += ca_units.at(c)->getICaL();
-        data.at(1) += ca_units.at(c)->getINaCa();
-        data.at(2) += ca_units.at(c)->getIbCa();
-        data.at(3) += ca_units.at(c)->getIpCa();
-    }
-
-    for(int c=0; c<my_tUnits; c++) data.push_back(ca_units.at(c)->getCai());
-    for(int c=0; c<my_tUnits; c++) data.push_back(ca_units.at(c)->getCaSR());
-
-    MPI_Send(&data[0], data.size(), MPI_DOUBLE, 0, tag, MPI_COMM_WORLD);
-}
-
-void Myocyte::getDataFromCaRU(){
-    int tag = 2;
-    vetor data;
-
-    int aux_CaRUId = 0;
-    for(int core = 1; core < (world_size+1); core++){
-        int aux_localTUnit = localTUnits.at(core-1);
-        data.clear();
-        data.resize(4+2*aux_localTUnit);
-
-        MPI_Recv(&data[0], data.size(), MPI_DOUBLE, core, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        caru_ical.at(core-1) = data.at(0);
-        caru_inaca.at(core-1)= data.at(1);
-        caru_ibca.at(core-1) = data.at(2);
-        caru_ipca.at(core-1) = data.at(3);
-        
-        for(int u=0;u<aux_localTUnit;u++){
-            CaRU::setCaiDiffValue(aux_CaRUId,data.at(4+u));
-            CaRU::setCaSRDiffValue(aux_CaRUId,data.at(4+u+aux_localTUnit));
-            aux_CaRUId++;
-        }
-    }
-}
-
-void Myocyte::sendFinishToCaRU(){
-    vetor data;
-    
-    for(int core = 1; core < (world_size+1); core++){
-        int aux_localTUnit = localTUnits.at(core-1);
-        data.clear();
-        data.resize(4+2*aux_localTUnit);
-
-        data.at(0) = Myocyte::finishMsg;
-        data.at(1) = Myocyte::finishMsg;
-        data.at(2) = false;
-        data.at(3) = Myocyte::finishMsg;
-
-        for(int u=0; u<aux_localTUnit; u++){
-            data.at(4+u) = Myocyte::finishMsg;
-            data.at(4+u+aux_localTUnit) = Myocyte::finishMsg;
-        }
-
-        MPI_Send(&data[0], data.size(), MPI_DOUBLE, core, 0, MPI_COMM_WORLD);
-    }
 }
 
 Myocyte::~Myocyte(){
