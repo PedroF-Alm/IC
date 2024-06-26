@@ -2,18 +2,15 @@
 #include <mpi.h>
 
 #define N 10000
-#define N 10000
 
 // #define PRINT
 
 int A[N][N] = {0}, B[N][N] = {0}, C[N][N] = {0};
 
 int main()
-int main()
 {
     for (int i = 0; i < N; i++)
         for (int j = 0; j < N; j++)
-            A[i][j] = 1, B[i][j] = 1, C[i][j] = 1;
             A[i][j] = 1, B[i][j] = 1, C[i][j] = 1;
 
     // MPI
@@ -62,7 +59,6 @@ int main()
     }
     else
     {
-        for (int i = world_rank - 1; i < N; i += world_size - 1)
         for (int i = world_rank - 1; i < N; i += world_size - 1)
         {        
             for (int j = 0; j < N; j++)
