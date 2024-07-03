@@ -191,15 +191,23 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
             save_y.push_back(y);
         }
 
+        for(int u=0; u<tUnits; u++){
+            CaRU::setCaiDiffValue(u, ca_units.at(u)->getCai());
+            CaRU::setCaSRDiffValue(u, ca_units.at(u)->getCaSR());
+            if(CaRU::getCaiDiffValue(u) > -1.) ca_units.at(u)->setCai(CaRU::getCaiDiffValue(u));
+            if(CaRU::getCaSRDiffValue(u) > -1.) ca_units.at(u)->setCaSR(CaRU::getCaSRDiffValue(u));
+        }
+
         if (Ith(y,_V_) > -0.5e3) {
             CaRU::setV(Ith(y,_V_));
             CaRU::setNai(Ith(y,_Nai_));
+            CaRU::setSave(toSave);
             
             for (int c = 0; c < tUnits; c++) {              
                 ca_units.at(c)->solveStep(dt);
             }            
         }
-                
+
         solveStep(dt, t);
         CaRU::applyDiffusions(dt);
 
@@ -233,6 +241,7 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     cout << "Fineshed solving." << endl;
 
     if (saveRate > 0.0){
+        // Myocyte savings
         cout << "Saving variables results." << endl;
         saveVariables();
         cout << "Fineshed saving." << endl;
@@ -249,6 +258,17 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
         command = "(cd " + outputCaUnitsFilePath + "/;python plot.py)";
         system(command.c_str());
         cout << "Fineshed plotting." << endl;
+
+        // CaRUs savings
+        cout << "Saving variables results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveVariables(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Currents results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveCurrents(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Extra results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveExtras(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
     }
 
     for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
