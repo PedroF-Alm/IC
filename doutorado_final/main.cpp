@@ -3,13 +3,13 @@
 #include "Myocyte.h"
 
 #define	initTime	0.0e0	// ms
-#define	endTime		1.0e2	// ms
+#define	endTime		30.0e3	// ms
 #define	stepTime	1.0e-3	// ms
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1
 
-#define xUnits		4
-#define yUnits		4
+#define xUnits		16
+#define yUnits		16
 #define n_LCC		-1
 #define n_RyR		n_LCC*5
 #define s_LCC		true
@@ -26,7 +26,10 @@ How to run: mpirun -np n_core ./exec n_lcc NxN
 
 int main(int argc, char* argv[]){
 	// srandom(time(NULL));
-	// srandom(seed);
+	// srandom(seed);x
+
+	auto begin = chrono::high_resolution_clock::now();
+	ios_base::sync_with_stdio(false);
 
 	string arg = argv[1];
 	string arg1 = argv[2];
@@ -42,6 +45,13 @@ int main(int argc, char* argv[]){
 	m->solve(stepTime,initTime,endTime,printRate,saveRate);
 
 	delete m;
+
+	auto end = chrono::high_resolution_clock::now();
+
+	auto duration = chrono::duration_cast<chrono::nanoseconds>(end - begin);
+
+	cout.precision(8);
+	cout << "main: " << fixed << (duration.count() * 1e-9)<< "s\n";
 
     return 0;
 }
