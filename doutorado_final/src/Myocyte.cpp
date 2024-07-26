@@ -159,7 +159,7 @@ void Myocyte::solveStep(mreal dt, mreal t){
     for(int c=0; c<_Myocyte_numODE_; c++) Ith(y,c) = Ith(y,c) + dt*Ith(dy,c);
 }
 
-void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate){
+void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate, int num_threads){
     cout << "Creating output dir." << endl;
     string command = "rm -r ";
     if (isPathExist(outputFilePath)){
@@ -181,6 +181,9 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     caru_ipca = 0.0;
 
     for (int c = 0; c < tUnits; c++) ca_units.push_back(new CaRU(c));
+
+    cout << "Executing on " << num_threads << " threads." << endl;
+    omp_set_num_threads(num_threads);
 
     double caru_solve_time = 0, caru_diff_time = 0, myocyte_solve_time = 0;
     auto begin = chrono::high_resolution_clock::now(), end = chrono::high_resolution_clock::now();      
@@ -206,7 +209,7 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
         CaRU::setSave(toSave);
 
         double pBegin = omp_get_wtime();    
-        #pragma omp parallel for num_threads(2)
+        #pragma omp parallel for 
         for (int c = 0; c < tUnits; c++) {    
             ca_units.at(c)->solveStep(dt);
         }
@@ -288,10 +291,13 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
 
     for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
 
-    cout.precision(8);
-    cout << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
-    cout << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
-    cout << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n";
+    ofstream file;
+    file.open(to_string(num_threads).append("_thread(s).txt"), ios::app);
+    file.precision(8);
+    file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
+    file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
+    file << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n\n";
+    file.close();
 }
 
 void Myocyte::solveAlgEquations(mreal dt, mreal t){

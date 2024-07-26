@@ -10,7 +10,7 @@
 #include <chrono>
 #include <string>
 #include <sys/stat.h>
-#include <mpi.h>
+#include <omp.h>
 
 //Myocyte Model variabels indice definitions-
 #define	_Myocyte_numODE_	11
@@ -40,7 +40,7 @@ public:
     void setLCCStochastic(bool s_LCC);
     void setRyRStochastic(bool s_RyR);
     void setModelVariation(int mod);
-    void solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate);
+    void solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate, int num_threads);
     ~Myocyte();
 
     static void setOutputPath(string path){

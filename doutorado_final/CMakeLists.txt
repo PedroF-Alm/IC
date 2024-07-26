@@ -18,22 +18,22 @@ INCLUDE_DIRECTORIES(${SUNDIALS_INC_DIR})
 SET(SUNDIALS_LIB_DIR /usr/local/sundials/lib)
 
 # Find the SUNDIALS solver's library
-FIND_LIBRARY(SUNDIALS_SOLVER_LIB
-  sundials_cvode ${SUNDIALS_LIB_DIR}
-  DOC "CVODE library")
+# FIND_LIBRARY(SUNDIALS_SOLVER_LIB
+#   sundials_cvode ${SUNDIALS_LIB_DIR}
+#   DOC "CVODE library")
 
 # Find the NVECTOR library
-FIND_LIBRARY(SUNDIALS_NVEC_LIB
-  sundials_nvecserial ${SUNDIALS_LIB_DIR}
-  DOC "NVECTOR library")
+# FIND_LIBRARY(SUNDIALS_NVEC_LIB
+#   sundials_nvecserial ${SUNDIALS_LIB_DIR}
+#   DOC "NVECTOR library")
 
-IF(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB)
-	option(USE_CVODE "Using CVODE" ON)
-	message(STATUS "CVODE Found!")
-ELSE(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB) 
-	option(USE_CVODE "Not Using CVODE" OFF)
-	message(STATUS "CVODE NOT Found!")
-ENDIF(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB)
+# IF(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB)
+# 	option(USE_CVODE "Using CVODE" ON)
+# 	message(STATUS "CVODE Found!")
+# ELSE(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB) 
+# 	option(USE_CVODE "Not Using CVODE" OFF)
+# 	message(STATUS "CVODE NOT Found!")
+# ENDIF(SUNDIALS_SOLVER_LIB AND SUNDIALS_NVEC_LIB)
 
 #OpenMP-----------------------
 find_package(OpenMP)
@@ -72,7 +72,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #-----------------------------
 
 # List of all libraries
-SET(SUNDIALS_LIBS ${SUNDIALS_SOLVER_LIB} ${SUNDIALS_NVEC_LIB})
+# SET(SUNDIALS_LIBS ${SUNDIALS_SOLVER_LIB} ${SUNDIALS_NVEC_LIB})
 
 file(GLOB SOURCES ./src/*.cpp ./main.cpp)
 #configure_file (./header/prototypes_cmake/CVODE.h.in ../header/CVODE.h)

@@ -3,7 +3,7 @@
 #include "Myocyte.h"
 
 #define	initTime	0.0e0	// ms
-#define	endTime		30.0e3	// ms
+#define	endTime		1.0e1	// ms
 #define	stepTime	1.0e-3	// ms
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1
@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
 
 	string arg = argv[1];
 	string arg1 = argv[2];
+	int num_threads = atoi(argv[3]);
 	// string outputPath = "../exit/final/dif0/realizations/"+arg+"_lcc_"+arg1+"/";
 	string outputPath = "../exit/"+arg+"_lcc_"+arg1+"/";
 	int newNlcc = atoi(argv[1]);
@@ -42,7 +43,7 @@ int main(int argc, char* argv[]){
 
 	Myocyte* m = new Myocyte(xUnits,yUnits,newNlcc,newNryr,s_LCC,s_RyR,model,DCai,DCaSR);	
 
-	m->solve(stepTime,initTime,endTime,printRate,saveRate);
+	m->solve(stepTime,initTime,endTime,printRate,saveRate, num_threads);
 
 	delete m;
 
@@ -50,8 +51,11 @@ int main(int argc, char* argv[]){
 
 	auto duration = chrono::duration_cast<chrono::nanoseconds>(end - begin);
 
-	cout.precision(8);
-	cout << "main: " << fixed << (duration.count() * 1e-9)<< "s\n";
+	ofstream file;
+    file.open(to_string(num_threads).append("_thread(s).txt"), ios::app);
+    file.precision(8);
+	file << "main: " << fixed << (duration.count() * 1e-9)<< "s\n";
+	file.close();
 
     return 0;
 }
