@@ -40,7 +40,7 @@ public:
     void setLCCStochastic(bool s_LCC);
     void setRyRStochastic(bool s_RyR);
     void setModelVariation(int mod);
-    void solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate, int num_threads);
+    void solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate);
     ~Myocyte();
 
     static void setOutputPath(string path){
