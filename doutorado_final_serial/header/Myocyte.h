@@ -27,15 +27,13 @@
 #define _r_             10
 //--------------------------------------------------
 
-
-
 class Myocyte{
 public:
-//     Myocyte();
-//     Myocyte(int xUnits, int yUnits);
-//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR);
-//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR);
-//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod);
+    Myocyte();
+    Myocyte(int xUnits, int yUnits);
+    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR);
+    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR);
+    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod);
     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod, mreal DCai, mreal DCaSR);
     void setNLCC(int n_LCC);
     void setNRyR(int n_RyR);
@@ -71,7 +69,7 @@ public:
 
         const mreal stim_period     = 1000.;          // ms
         const mreal stim_start      = 10.;            // ms
-        const mreal stim_end        = 20.0e3;       // ms
+        const mreal stim_end        = 30.0e3;       // ms
         const mreal stim_duration   = 1.;             // ms
         const mreal stim_amplitude  = -52.;           // A/F
     //-----------------------
@@ -83,8 +81,6 @@ private:
     static int xUnits;
     static int yUnits;
     static int tUnits;
-    mreal *cais;
-    mreal *casrs;
     const static mreal finishMsg;
     
     static bool isPathExist(const string &s){
@@ -197,11 +193,10 @@ private:
     mreal getStim(mreal t);
     mreal getTauH(vetor y);
     mreal getTauJ(vetor y);
-    void getCaruCurs();
-    // mreal getICaL();
-    // mreal getIbCa();
-    // mreal getINaCa();
-    // mreal getIpCa();
+    mreal getICaL();
+    mreal getIbCa();
+    mreal getINaCa();
+    mreal getIpCa();
     void initiateDefaultInitConditions();
     void initiateInitConditionsFromFile();
     void solveStep(mreal dt, mreal t);
@@ -211,9 +206,8 @@ private:
 
     int n_LCC, n_RyR;
     mreal t;
-    CaRU **ca_units;
-    // vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
-    CaruCurs *caru_curs;
+    vector<CaRU*> ca_units;
+    mreal caru_ical, caru_inaca, caru_ibca, caru_ipca;
     vetor y = vetor(_Myocyte_numODE_);
     vetor dy = vetor(_Myocyte_numODE_);
     vetor save_t;

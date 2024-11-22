@@ -11,14 +11,13 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
-#include <curand_kernel.h>
 
 using namespace std;
 
 //Type definitions--------
 typedef double mreal;
 typedef vector<mreal> vetor;
-#define Ith(v,i) v[i]
+#define Ith(v,i) v.at(i)
 //------------------------
 
 //CaRU Model variabels indice definitions-
@@ -44,18 +43,10 @@ typedef vector<mreal> vetor;
 #define _If2l_          16
 //--------------------------------------------------
 
-typedef struct {
-    mreal ICal;
-    mreal IbCa;
-    mreal INaCa;
-    mreal IpCa;
-} CaruCurs;
-
 class CaRU{
 public:
     CaRU(int id);
-    ~CaRU();
-    __device__ void solveStep(mreal dt, mreal V, mreal Nai, bool save);
+    void solveStep(mreal dt);
     void saveVariables(vetor save_t, string output_path);
     void saveCurrents(vetor save_t, string output_path);
     void saveExtras(vetor save_t, string output_path);
@@ -72,13 +63,6 @@ public:
     void setCai(mreal value);
     void setCaSR(mreal value);
     void printId();
-    mreal *curs;
-    mreal *extras;
-    mreal *y;
-    vector<vetor> save_y;
-    vector<vetor> save_c;
-    vector<vetor> save_e;
-    curandState state;
 
     //----Model Definitions--   
     const static int TT = 0;
@@ -122,21 +106,37 @@ public:
         CaRU::yUnits = yUnits;
     }
 
+    static void setCaiDiffValue(int id, mreal value){
+        CaRU::cais.at(CaRU::getYId(id)).at(CaRU::getXId(id)) = value;
+    }
+
+    static mreal getCaiDiffValue(int id){
+        return CaRU::cais.at(CaRU::getYId(id)).at(CaRU::getXId(id));
+    }
+
+    static void setCaSRDiffValue(int id, mreal value){
+        CaRU::casrs.at(CaRU::getYId(id)).at(CaRU::getXId(id)) = value;
+    }
+
+    static mreal getCaSRDiffValue(int id){
+        return CaRU::casrs.at(CaRU::getYId(id)).at(CaRU::getXId(id));
+    }
+
     static void initiateDefaultInitConditionsCaiDiff(){
-        // CaRU::cais.clear();
-        // vetor aux;
-        // for(int c=0; c<xUnits; c++) aux.push_back(-1.);
-        // for(int c=0; c<yUnits; c++) CaRU::cais.push_back(aux);
+        CaRU::cais.clear();
+        vetor aux;
+        for(int c=0; c<xUnits; c++) aux.push_back(-1.);
+        for(int c=0; c<yUnits; c++) CaRU::cais.push_back(aux);
     }
 
     static void initiateDefaultInitConditionsCaSRDiff(){
-        // CaRU::casrs.clear();
-        // vetor aux;
-        // for(int c=0; c<xUnits; c++) aux.push_back(-1.);
-        // for(int c=0; c<yUnits; c++) CaRU::casrs.push_back(aux);
+        CaRU::casrs.clear();
+        vetor aux;
+        for(int c=0; c<xUnits; c++) aux.push_back(-1.);
+        for(int c=0; c<yUnits; c++) CaRU::casrs.push_back(aux);
     }
 
-    static void saveCaiDiffMatrix(mreal *cais, string output_path, mreal t){
+    static void saveCaiDiffMatrix(string output_path, mreal t){
         std::ostringstream streamObj3;
         streamObj3 << std::fixed;
         streamObj3 << std::setprecision(0);
@@ -146,15 +146,15 @@ public:
         ofstream file (file_name);
         if(file.is_open()){
             for(int y=yUnits-1; y>=0; y--){
-                for(int x=0; x<xUnits-1;x++) file<<cais[y * yUnits + x]<<"\t";
-                file<<cais[y * yUnits + xUnits - 1]<<endl;
+                for(int x=0; x<xUnits-1;x++) file<<cais.at(y).at(x)<<"\t";
+                file<<cais.at(y).at(xUnits-1)<<endl;
             }
             file.close();
         }
         else cout << "Unable to open file './ca_units/output_cais_t*.dat'"<<endl;
     }
 
-    static void saveCaSRDiffMatrix(mreal *casrs, string output_path, mreal t){
+    static void saveCaSRDiffMatrix(string output_path, mreal t){
         std::ostringstream streamObj3;
         streamObj3 << std::fixed;
         streamObj3 << std::setprecision(0);
@@ -164,8 +164,8 @@ public:
         ofstream file (file_name);
         if(file.is_open()){
             for(int y=yUnits-1; y>=0; y--){
-                for(int x=0; x<xUnits-1;x++) file<<casrs[y * yUnits + x]<<"\t";
-                file<<casrs[y * yUnits + xUnits - 1]<<endl;
+                for(int x=0; x<xUnits-1;x++) file<<casrs.at(y).at(x)<<"\t";
+                file<<casrs.at(y).at(xUnits-1)<<endl;
             }
             file.close();
         }
@@ -312,9 +312,9 @@ public:
         file.close();
     }
 
-    static void applyDiffusions(mreal *cais, mreal *casrs, mreal dt){
-        CaRU::applyCaiDiffusion(cais, dt);
-        CaRU::applyCaSRDiffusion(casrs, dt);
+    static void applyDiffusions(mreal dt){
+        CaRU::applyCaiDiffusion(dt);
+        CaRU::applyCaSRDiffusion(dt);
     }
 
     static void setDCai(mreal value){
@@ -326,24 +326,30 @@ public:
     }
 
 private:
-    __device__ void solveAlgEquations(mreal dt, mreal V, mreal Nai);
-    __device__ void calcDerivatives(mreal dt, mreal V, mreal Nai);
-    __device__ mreal solveQuadratic(mreal a, mreal b, mreal c);
-    __device__ void updateRyRs(mreal dt);
-    __device__ void updateLCCs(mreal dt);
-    __device__ int calcBinomial(int t, mreal p);
+    void solveAlgEquations(mreal dt);
+    void calcDerivatives(mreal dt);
+    mreal solveQuadratic(mreal a, mreal b, mreal c);
+    void updateRyRs(mreal dt);
+    void updateLCCs(mreal dt);
+    int calcBinomial(int t, mreal p);
     int calcBinomial_1(int t, mreal p);
     int calcBinomial_3(int t, mreal p);
-    __device__ int calcBinomial_4(int t, mreal p);
+    int calcBinomial_4(int t, mreal p);
     void initiateDefaultInitConditions();
     void initiateInitConditionsFromFile();
     void initiateDefaultMultiliers();
     void initiateMultiliersFromFile();
 
     int id;
-    mreal *dy;
-    mreal *mult;
-    
+    vetor y = vetor(_CaRU_numODE_);
+    vetor dy = vetor(_CaRU_numODE_);
+    vetor mult = vetor(_numM_);
+    vector<vetor> save_y;
+    vector<vetor> save_c;
+    vector<vetor> save_e;
+    static vector<vetor> cais;
+    static vector<vetor> casrs;
+
     static bool save;
     static int MOD;                                      //Model variation (TT or TM)
     static int tUnits;                                   // ca_units
@@ -432,12 +438,12 @@ private:
         return  (int) id/yUnits;
     }
 
-    static void applyCaiDiffusion(mreal *cais, mreal dt){
+    static void applyCaiDiffusion(mreal dt){
         vector<vetor> aux;
 
         for(int y=0; y<yUnits; y++){
             vetor a;
-            for(int x=0; x<yUnits; x++) a.push_back(cais[y * yUnits + x]);
+            for(int x=0; x<yUnits; x++) a.push_back(cais.at(y).at(x));
             aux.push_back(a);
         }
 
@@ -448,19 +454,19 @@ private:
                 mreal uxp1y = (x+1 < xUnits) ? aux.at(y).at(x+1) : aux.at(y).at(x);
                 mreal uxyl1 = (y-1 >= 0) ? aux.at(y-1).at(x) : aux.at(y).at(x);
                 mreal uxyp1 = (y+1 < yUnits) ? aux.at(y+1).at(x) : aux.at(y).at(x);
-                
+
                 mreal newV = uxy + DCai*dt*(uxp1y-2.0*uxy+uxl1y + uxyp1-2.0*uxy+uxyl1);
-                cais[y * yUnits + x] = newV;
+                cais.at(y).at(x) = newV;
             }    
         }
     }
 
-    static void applyCaSRDiffusion(mreal *casrs, mreal dt){
+    static void applyCaSRDiffusion(mreal dt){
         vector<vetor> aux;
 
         for(int y=0; y<yUnits; y++){
             vetor a;
-            for(int x=0; x<yUnits; x++) a.push_back(casrs[y * yUnits + x]);
+            for(int x=0; x<yUnits; x++) a.push_back(casrs.at(y).at(x));
             aux.push_back(a);
         }
 
@@ -473,13 +479,10 @@ private:
                 mreal uxyp1 = (y+1 < yUnits) ? aux.at(y+1).at(x) : aux.at(y).at(x);
 
                 mreal newV = uxy + DCaSR*dt*(uxp1y-2.0*uxy+uxl1y + uxyp1-2.0*uxy+uxyl1);
-                casrs[y * yUnits + x] = newV;
+                casrs.at(y).at(x) = newV;
             }    
         }
     }
 };
 
-
 #endif
-    
-__global__ void solveCaRUStep(CaRU **ca_units, int tUnits, mreal dt, mreal V, mreal Nai, bool save, mreal *cais, mreal *casrs, CaruCurs *caru_curs);

@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "header/Myocyte.h"
+#include "Myocyte.h"
 
 #define	initTime	0.0e0	// ms
 #define	endTime		1.0e2	// ms
@@ -8,8 +8,8 @@
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1
 
-#define xUnits		8
-#define yUnits		8
+#define xUnits		4
+#define yUnits		4
 #define n_LCC		-1
 #define n_RyR		n_LCC*5
 #define s_LCC		true
@@ -28,8 +28,6 @@ int main(int argc, char* argv[]){
 	// srandom(time(NULL));
 	// srandom(seed);
 
-	MPI_Init(NULL, NULL);
-
 	string arg = argv[1];
 	string arg1 = argv[2];
 	// string outputPath = "../exit/final/dif0/realizations/"+arg+"_lcc_"+arg1+"/";
@@ -44,8 +42,6 @@ int main(int argc, char* argv[]){
 	m->solve(stepTime,initTime,endTime,printRate,saveRate);
 
 	delete m;
-
-	MPI_Finalize();
 
     return 0;
 }

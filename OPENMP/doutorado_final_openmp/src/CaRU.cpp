@@ -1,4 +1,4 @@
-#include "../header/CaRU.h"
+#include "CaRU.h"
 
 mreal CaRU::V       = -85.317147;
 mreal CaRU::Nai     = 9.397565;
@@ -13,6 +13,8 @@ bool CaRU::RyR_STO  = true;
 int CaRU::MOD = CaRU::TM;
 mreal CaRU::DCai = 0.0;
 mreal CaRU::DCaSR = 0.0;
+vector<vetor> CaRU::cais = {{-1.}};
+vector<vetor> CaRU::casrs = {{-1.}};
 const string CaRU::initCondFilePath = "../input/initCond_CaRU.dat";
 const string CaRU::multFilePath = "../input/multipliers.dat";
 
@@ -22,22 +24,8 @@ CaRU::CaRU(int id){
     // srandom(id*time(NULL));
     srandom(id*2);
     this->id = id;
-    y      = (mreal*) calloc(_CaRU_numODE_, sizeof(mreal));
-    dy     = (mreal*) calloc(_CaRU_numODE_, sizeof(mreal));
-    mult   = (mreal*) calloc(_numM_, sizeof(mreal));
-    curs   = (mreal*) calloc(8, sizeof(mreal));
-    extras = (mreal*) calloc(5, sizeof(mreal));
-
     this->initiateInitConditionsFromFile();
     this->initiateMultiliersFromFile();
-}
-
-CaRU::~CaRU() {
-    free(y);
-    free(dy);
-    free(mult);
-    free(curs);
-    free(extras);
 }
 
 void CaRU::initiateDefaultInitConditions(){
@@ -87,6 +75,7 @@ void CaRU::initiateInitConditionsFromFile(){
         aux.at(c) = stod(line);
     }
     f.close();   
+
     
     Ith(y,_C_)    = Ith(aux,_C_);
     Ith(y,_Cl_)   = Ith(aux,_Cl_);
@@ -150,49 +139,39 @@ void CaRU::initiateMultiliersFromFile(){
     f.close();
 }
 
-__global__ void solveCaRUStep(CaRU **ca_units, int tUnits, mreal dt, mreal V, mreal Nai, bool save, mreal *cais, mreal *casrs, CaruCurs *caru_curs) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x + blockIdx.y * blockDim.y;
-    
-    if (idx >= tUnits)
-        return;
-
-    curand_init((unsigned long long)clock() + idx, 0, 0, &ca_units[idx]->state);
-
-    cais[idx] = Ith(ca_units[idx]->y, _Cai_);
-    casrs[idx] = Ith(ca_units[idx]->y, _CaSR_);
-    if (cais[idx] > -1.)  Ith(ca_units[idx]->y,_Cai_) = cais[idx];
-    if (casrs[idx] > -1.)  Ith(ca_units[idx]->y,_CaSR_) = casrs[idx];
-
-    ca_units[idx]->solveStep(dt, V, Nai, save);
-
-    caru_curs[idx].ICal = ca_units[idx]->curs[4];
-    caru_curs[idx].IbCa = ca_units[idx]->curs[5];
-    caru_curs[idx].INaCa = ca_units[idx]->curs[7];
-    caru_curs[idx].IpCa = ca_units[idx]->curs[6];
-}
-
-__device__ void CaRU::solveStep(mreal dt, mreal V, mreal Nai, bool save){
-    calcDerivatives(dt, V, Nai);
+void CaRU::solveStep(mreal dt){
+    calcDerivatives(dt);
     for(int c=0; c<_CaRU_numODE_; c++) Ith(y,c) = Ith(y,c) + dt*Ith(dy,c);
     if(save){
-        curs[0] = I_up;
-        curs[1] = I_leak;
-        curs[2] = I_rel;
-        curs[3] = I_xfer;
-        curs[4] = I_CaL;
-        curs[5] = I_bCa;
-        curs[6] = I_pCa;
-        curs[7] = I_NaCa;
+        save_y.push_back(y);
 
-        extras[0] = ((mreal)oLCCSt)/((mreal)4.0);
-        extras[1] = ((mreal)oRyRSt)/((mreal)2.0);
-        extras[2] = Cai_free;
-        extras[3] = Cass_free;
-        extras[4] = CaSR_free;
+        vetor curs;
+        curs.push_back(I_up);
+        curs.push_back(I_leak);
+        curs.push_back(I_rel);
+        curs.push_back(I_xfer);
+        curs.push_back(I_CaL);
+        curs.push_back(I_bCa);
+        curs.push_back(I_pCa);
+        curs.push_back(I_NaCa);
+        save_c.push_back(curs);
+
+        vetor extras;
+        if(!LCC_STO) extras.push_back(yoLCC);
+        else extras.push_back(((mreal)oLCCSt)/((mreal)n_LCC));
+        if(!RyR_STO) extras.push_back(Ith(y,_O_));
+        else extras.push_back(((mreal)oRyRSt)/((mreal)n_RyR));
+        extras.push_back(Cai_free);
+        extras.push_back(Cass_free);
+        extras.push_back(CaSR_free);
+        save_e.push_back(extras);
     }
 }
 
-__device__ void CaRU::solveAlgEquations(mreal dt, mreal V, mreal Nai){
+void CaRU::solveAlgEquations(mreal dt){
+    mreal V = CaRU::V;
+    mreal Nai = CaRU::Nai;
+
     Cai_free = solveQuadratic(-1.0,(Ith(y,_Cai_)+Ith(dy,_Cai_)-K_buf_c-Buf_c),K_buf_c*Ith(y,_Cai_));
     CaSR_free = solveQuadratic(-1.0,(Ith(y,_CaSR_)+Ith(dy,_CaSR_)-K_buf_sr-Buf_sr),K_buf_sr*Ith(y,_CaSR_));
     Cass_free = solveQuadratic(-1.0,(Ith(y,_CaSS_)+Ith(y,_CaSS_)-K_buf_ss-Buf_ss),K_buf_ss*Ith(y,_CaSS_));
@@ -222,8 +201,14 @@ __device__ void CaRU::solveAlgEquations(mreal dt, mreal V, mreal Nai){
     mreal oLCC,oRyR;
     updateLCCs(dt);
     updateRyRs(dt);
-    oLCC = ((mreal)oLCCSt)/((mreal)4.0);  //n_LCC
-    oRyR = ((mreal)oRyRSt)/((mreal)20.0); // n_RyR
+    if(MOD == CaRU::TT){
+        oLCC = Ith(y,_d_)*Ith(y,_f_)*Ith(y,_f2_)*Ith(y,_fCass_);
+        oRyR = Ith(y,_O_);
+    }
+    else if(MOD == CaRU::TM){
+        oLCC = (LCC_STO) ? (((mreal)oLCCSt)/((mreal)n_LCC)) : yoLCC;
+        oRyR = (RyR_STO) ? (((mreal)oRyRSt)/((mreal)n_RyR)) : Ith(y,_O_);
+    }
 
     I_up = Vmax_up/(1.+pow(K_up,2.)/pow(Cai_free,2.));
     I_leak = V_leak*(CaSR_free - Cai_free);
@@ -235,8 +220,8 @@ __device__ void CaRU::solveAlgEquations(mreal dt, mreal V, mreal Nai){
     I_NaCa = k_NaCa*(1./(Km_Nai*Km_Nai*Km_Nai+Na_o*Na_o*Na_o))*(1./(Km_Ca+Ca_o))*(1./(1+K_sat*exp((n-1.)*V*F/(R*T))))*(exp(n*V*F/(R*T))*Nai*Nai*Nai*Ca_o-exp((n-1.)*V*F/(R*T))*Na_o*Na_o*Na_o*Cai_free*2.5);
 }
 
-__device__ void CaRU::calcDerivatives(mreal dt, mreal V, mreal Nai){
-    solveAlgEquations(dt, V, Nai);
+void CaRU::calcDerivatives(mreal dt){
+    solveAlgEquations(dt);
 
     Ith(dy,_d_) = (d_inf - Ith(y,_d_))/(tau_d);
     Ith(dy,_f_) = (f_inf - Ith(y,_f_))/(tau_f);
@@ -259,7 +244,7 @@ __device__ void CaRU::calcDerivatives(mreal dt, mreal V, mreal Nai){
     Ith(dy,_I_) = r_O_I*Ith(y,_O_)  + r_RI_I*Ith(y,_RI_)- (r_I_RI + r_I_O )*Ith(y,_I_);
 }
 
-__device__ mreal CaRU::solveQuadratic(mreal a, mreal b, mreal c){
+mreal CaRU::solveQuadratic(mreal a, mreal b, mreal c){
     mreal delta = b*b - 4.0*a*c;
     mreal x1 = (-b + sqrt(delta))/(2.0*a);
     mreal x2 = (-b - sqrt(delta))/(2.0*a);
@@ -268,7 +253,7 @@ __device__ mreal CaRU::solveQuadratic(mreal a, mreal b, mreal c){
     else return x2;
 }
 
-__device__ void CaRU::updateRyRs(mreal dt){
+void CaRU::updateRyRs(mreal dt){
     mreal kcasr = max_sr-((max_sr-min_sr)/(1.+(EC/CaSR_free)*(EC/CaSR_free)));
     mreal k1 = k1_prime / kcasr;
     mreal k2 = k2_prime * kcasr;
@@ -282,54 +267,53 @@ __device__ void CaRU::updateRyRs(mreal dt){
     r_I_O = k4;
     r_I_RI = k3;
 
-    int t_R_O;
-    int t_R_RI;
-    int t_O_R;
-    int t_O_I;
-    int t_RI_I;
-    int t_RI_R;
-    int t_I_O;
-    int t_I_RI;
+    if(RyR_STO){
+        int t_R_O;  
+        int t_R_RI; 
+        int t_O_R;  
+        int t_O_I;  
+        int t_RI_I;
+        int t_RI_R;            
+        int t_I_O;             
+        int t_I_RI; 
 
-    bool possible = false;
-    while (!possible){
-        t_R_O = calcBinomial(rRyRSt, r_R_O * dt);
-        t_R_RI = calcBinomial(rRyRSt, r_R_RI * dt);
-        int n_R = rRyRSt - (t_R_O + t_R_RI);
+        bool possible = false;
+        while(!possible){
+            t_R_O   = calcBinomial(rRyRSt,r_R_O*dt);
+            t_R_RI  = calcBinomial(rRyRSt,r_R_RI*dt);
+            int n_R = rRyRSt - (t_R_O + t_R_RI);
+            
+            t_RI_I  = calcBinomial(riRyRSt,r_RI_I*dt);
+            t_RI_R  = calcBinomial(riRyRSt,r_RI_R*dt);     
+            int n_RI= riRyRSt - (t_RI_I + t_RI_R);
+            
+            t_I_O   = calcBinomial(iRyRSt,r_I_O*dt);             
+            t_I_RI  = calcBinomial(iRyRSt,r_I_RI*dt); 
+            int n_I = iRyRSt - (t_I_O + t_I_RI);
+            
+            t_O_R   = calcBinomial(oRyRSt,r_O_R*dt); 
+            t_O_I   = calcBinomial(oRyRSt,r_O_I*dt);                 
+            int n_O = oRyRSt - (t_O_R + t_O_I);
+    
+            if(n_R < 0 || n_RI < 0 || n_I < 0 || n_O < 0) possible = false;
+            else possible = true;
 
-        t_RI_I = calcBinomial(riRyRSt, r_RI_I * dt);
-        t_RI_R = calcBinomial(riRyRSt, r_RI_R * dt);
-        int n_RI = riRyRSt - (t_RI_I + t_RI_R);
+            if(!possible) std::cout<<"Valores inválidos!!\t"<<endl;
+        }
 
-        t_I_O = calcBinomial(iRyRSt, r_I_O * dt);
-        t_I_RI = calcBinomial(iRyRSt, r_I_RI * dt);
-        int n_I = iRyRSt - (t_I_O + t_I_RI);
+        int deltaR    = t_RI_R + t_O_R  - (t_R_O  + t_R_RI);
+        int deltaRI   = t_R_RI + t_I_RI - (t_RI_I + t_RI_R);
+        int deltaI    = t_RI_I + t_O_I  - (t_I_O  + t_I_RI);
+        int deltaO    = t_R_O  + t_I_O  - (t_O_R  + t_O_I );
 
-        t_O_R = calcBinomial(oRyRSt, r_O_R * dt);
-        t_O_I = calcBinomial(oRyRSt, r_O_I * dt);
-        int n_O = oRyRSt - (t_O_R + t_O_I);
-
-        if (n_R < 0 || n_RI < 0 || n_I < 0 || n_O < 0)
-            possible = false;
-        else
-            possible = true;
-
-        if (!possible)
-            printf("Valores inválidos!!\t\n");
+        rRyRSt    += deltaR;
+        riRyRSt   += deltaRI;
+        iRyRSt    += deltaI;
+        oRyRSt    = n_RyR - (rRyRSt + riRyRSt + iRyRSt);
     }
-
-    int deltaR = t_RI_R + t_O_R - (t_R_O + t_R_RI);
-    int deltaRI = t_R_RI + t_I_RI - (t_RI_I + t_RI_R);
-    int deltaI = t_RI_I + t_O_I - (t_I_O + t_I_RI);
-    int deltaO = t_R_O + t_I_O - (t_O_R + t_O_I);
-
-    rRyRSt += deltaR;
-    riRyRSt += deltaRI;
-    iRyRSt += deltaI;
-    oRyRSt = /* n_RyR */ 20 - (rRyRSt + riRyRSt + iRyRSt); 
 }
 
-__device__ void CaRU::updateLCCs(mreal dt){
+void CaRU::updateLCCs(mreal dt){
     mreal alpha_d = d_inf/tau_d;
     mreal beta_f = 1.0*(f_inf/tau_f);
     mreal beta_f2 = 1.0*(f2_inf/tau_f2);
@@ -370,108 +354,101 @@ __device__ void CaRU::updateLCCs(mreal dt){
     r_O_Cl = Ith(mult,9)*beta_d;
     r_O_If2l = Ith(mult,10)*1.5*alpha_f2;
 
-    int t_C_If;
-    int t_C_Cl;
-    int t_C_If2;
+    if(LCC_STO){
+        int t_C_If;
+        int t_C_Cl; 
+        int t_C_If2; 
+        
+        int t_If_C; 
+        int t_If_Ifl; 
+        
+        int t_If2_C; 
+        int t_If2_If2l; 
+        
+        int t_Cl_Ifl;
+        int t_Cl_C;
+        int t_Cl_If2l; 
+        int t_Cl_O;
+        
+        int t_Ifl_O; 
+        int t_Ifl_Cl; 
+        int t_Ifl_If; 
+        
+        int t_If2l_O; 
+        int t_If2l_Cl; 
+        int t_If2l_If2; 
+        
+        int t_O_Ifl;
+        int t_O_Cl; 
+        int t_O_If2l;
 
-    int t_If_C;
-    int t_If_Ifl;
+        bool possible = false;
+        while(!possible){
+            t_C_If      = calcBinomial(cLCCSt,dt*r_C_If );
+            t_C_Cl      = calcBinomial(cLCCSt,dt*r_C_Cl );
+            t_C_If2     = calcBinomial(cLCCSt,dt*r_C_If2);
+            int n_C     = cLCCSt - (t_C_If + t_C_Cl + t_C_If2);
+            
+            t_If_C      = calcBinomial(ifLCCSt,dt*r_If_C  );
+            t_If_Ifl    = calcBinomial(ifLCCSt,dt*r_If_Ifl);
+            int n_If    = ifLCCSt - (t_If_C + t_If_Ifl);
+            
+            t_If2_C     = calcBinomial(if2LCCSt,dt*r_If2_C   );
+            t_If2_If2l  = calcBinomial(if2LCCSt,dt*r_If2_If2l);
+            int n_If2   = if2LCCSt - (t_If2_C + t_If2_If2l);
+            
+            t_Cl_Ifl    = calcBinomial(clLCCSt,dt*r_Cl_Ifl );
+            t_Cl_C      = calcBinomial(clLCCSt,dt*r_Cl_C   );
+            t_Cl_If2l   = calcBinomial(clLCCSt,dt*r_Cl_If2l);
+            t_Cl_O      = calcBinomial(clLCCSt,dt*r_Cl_O   );
+            int n_Cl    = clLCCSt - (t_Cl_Ifl + t_Cl_C + t_Cl_If2l + t_Cl_O);
+            
+            t_Ifl_O     = calcBinomial(iflLCCSt,dt*r_Ifl_O );
+            t_Ifl_Cl    = calcBinomial(iflLCCSt,dt*r_Ifl_Cl);
+            t_Ifl_If    = calcBinomial(iflLCCSt,dt*r_Ifl_If);
+            int n_Ifl   = iflLCCSt - (t_Ifl_O + t_Ifl_Cl + t_Ifl_If);
+            
+            t_If2l_O    = calcBinomial(if2lLCCSt,dt*r_If2l_O  );
+            t_If2l_Cl   = calcBinomial(if2lLCCSt,dt*r_If2l_Cl );
+            t_If2l_If2  = calcBinomial(if2lLCCSt,dt*r_If2l_If2);
+            int n_If2l  = if2lLCCSt - (t_If2l_O + t_If2l_Cl + t_If2l_If2);
+            
+            t_O_Ifl     = calcBinomial(oLCCSt,dt*r_O_Ifl );
+            t_O_Cl      = calcBinomial(oLCCSt,dt*r_O_Cl  );
+            t_O_If2l    = calcBinomial(oLCCSt,dt*r_O_If2l);
+            int n_O     = oLCCSt - (t_O_Ifl + t_O_Cl + t_O_If2l);
 
-    int t_If2_C;
-    int t_If2_If2l;
+            if(n_C < 0 || n_If < 0 || n_If2 < 0 || n_Cl < 0 || n_Ifl < 0 || n_If2l < 0 || n_O < 0) possible = false;
+            else possible = true;
 
-    int t_Cl_Ifl;
-    int t_Cl_C;
-    int t_Cl_If2l;
-    int t_Cl_O;
+            if(!possible) std::cout<<"Valores inválidos!!\t"<<endl;
+        }
 
-    int t_Ifl_O;
-    int t_Ifl_Cl;
-    int t_Ifl_If;
+        int deltaC      = t_If_C     + t_If2_C    + t_Cl_C             - (t_C_If   + t_C_Cl     + t_C_If2           );
+        int deltaIf     = t_C_If     + t_Ifl_If                        - (t_If_C   + t_If_Ifl                       );
+        int deltaIf2    = t_C_If2    + t_If2l_If2                      - (t_If2_C  + t_If2_If2l                     );
+        int deltaCl     = t_C_Cl     + t_Ifl_Cl   + t_If2l_Cl + t_O_Cl - (t_Cl_Ifl + t_Cl_C     + t_Cl_If2l + t_Cl_O);
+        int deltaIfl    = t_If_Ifl   + t_Cl_Ifl   + t_O_Ifl            - (t_Ifl_O  + t_Ifl_Cl   + t_Ifl_If          );
+        int deltaIf2l   = t_If2_If2l + t_Cl_If2l  + t_O_If2l           - (t_If2l_O + t_If2l_Cl  + t_If2l_If2        );
+        int deltaO      = t_Cl_O     + t_Ifl_O    + t_If2l_O           - (t_O_Ifl  + t_O_Cl     + t_O_If2l          );
 
-    int t_If2l_O;
-    int t_If2l_Cl;
-    int t_If2l_If2;
-
-    int t_O_Ifl;
-    int t_O_Cl;
-    int t_O_If2l;
-
-    bool possible = false;
-    while (!possible){
-        t_C_If = calcBinomial(cLCCSt, dt * r_C_If);
-        t_C_Cl = calcBinomial(cLCCSt, dt * r_C_Cl);
-        t_C_If2 = calcBinomial(cLCCSt, dt * r_C_If2);
-        int n_C = cLCCSt - (t_C_If + t_C_Cl + t_C_If2);
-
-        t_If_C = calcBinomial(ifLCCSt, dt * r_If_C);
-        t_If_Ifl = calcBinomial(ifLCCSt, dt * r_If_Ifl);
-        int n_If = ifLCCSt - (t_If_C + t_If_Ifl);
-
-        t_If2_C = calcBinomial(if2LCCSt, dt * r_If2_C);
-        t_If2_If2l = calcBinomial(if2LCCSt, dt * r_If2_If2l);
-        int n_If2 = if2LCCSt - (t_If2_C + t_If2_If2l);
-
-        t_Cl_Ifl = calcBinomial(clLCCSt, dt * r_Cl_Ifl);
-        t_Cl_C = calcBinomial(clLCCSt, dt * r_Cl_C);
-        t_Cl_If2l = calcBinomial(clLCCSt, dt * r_Cl_If2l);
-        t_Cl_O = calcBinomial(clLCCSt, dt * r_Cl_O);
-        int n_Cl = clLCCSt - (t_Cl_Ifl + t_Cl_C + t_Cl_If2l + t_Cl_O);
-
-        t_Ifl_O = calcBinomial(iflLCCSt, dt * r_Ifl_O);
-        t_Ifl_Cl = calcBinomial(iflLCCSt, dt * r_Ifl_Cl);
-        t_Ifl_If = calcBinomial(iflLCCSt, dt * r_Ifl_If);
-        int n_Ifl = iflLCCSt - (t_Ifl_O + t_Ifl_Cl + t_Ifl_If);
-
-        t_If2l_O = calcBinomial(if2lLCCSt, dt * r_If2l_O);
-        t_If2l_Cl = calcBinomial(if2lLCCSt, dt * r_If2l_Cl);
-        t_If2l_If2 = calcBinomial(if2lLCCSt, dt * r_If2l_If2);
-        int n_If2l = if2lLCCSt - (t_If2l_O + t_If2l_Cl + t_If2l_If2);
-
-        t_O_Ifl = calcBinomial(oLCCSt, dt * r_O_Ifl);
-        t_O_Cl = calcBinomial(oLCCSt, dt * r_O_Cl);
-        t_O_If2l = calcBinomial(oLCCSt, dt * r_O_If2l);
-        int n_O = oLCCSt - (t_O_Ifl + t_O_Cl + t_O_If2l);
-
-        if (n_C < 0 || n_If < 0 || n_If2 < 0 || n_Cl < 0 || n_Ifl < 0 || n_If2l < 0 || n_O < 0)
-            possible = false;
-        else
-            possible = true;
-
-        if (!possible)
-            printf("Valores inválidos!!\t\n");
+        cLCCSt          += deltaC;
+        ifLCCSt         += deltaIf;
+        if2LCCSt        += deltaIf2;     
+        clLCCSt         += deltaCl;
+        iflLCCSt        += deltaIfl;     
+        if2lLCCSt       += deltaIf2l;
+        oLCCSt          = n_LCC - (cLCCSt+ifLCCSt+if2LCCSt+clLCCSt+iflLCCSt+if2lLCCSt);
     }
-
-    int deltaC = t_If_C + t_If2_C + t_Cl_C - (t_C_If + t_C_Cl + t_C_If2);
-    int deltaIf = t_C_If + t_Ifl_If - (t_If_C + t_If_Ifl);
-    int deltaIf2 = t_C_If2 + t_If2l_If2 - (t_If2_C + t_If2_If2l);
-    int deltaCl = t_C_Cl + t_Ifl_Cl + t_If2l_Cl + t_O_Cl - (t_Cl_Ifl + t_Cl_C + t_Cl_If2l + t_Cl_O);
-    int deltaIfl = t_If_Ifl + t_Cl_Ifl + t_O_Ifl - (t_Ifl_O + t_Ifl_Cl + t_Ifl_If);
-    int deltaIf2l = t_If2_If2l + t_Cl_If2l + t_O_If2l - (t_If2l_O + t_If2l_Cl + t_If2l_If2);
-    int deltaO = t_Cl_O + t_Ifl_O + t_If2l_O - (t_O_Ifl + t_O_Cl + t_O_If2l);
-
-    cLCCSt += deltaC;
-    ifLCCSt += deltaIf;
-    if2LCCSt += deltaIf2;
-    clLCCSt += deltaCl;
-    iflLCCSt += deltaIfl;
-    if2lLCCSt += deltaIf2l;
-    oLCCSt = /* n_lcc*/ 4 - (cLCCSt + ifLCCSt + if2LCCSt + clLCCSt + iflLCCSt + if2lLCCSt);
-    // else yoLCC = 1.0 - (Ith(y,_C_) + Ith(y,_Cl_) + Ith(y,_If_) + Ith(y,_Ifl_) + Ith(y,_If2_) + Ith(y,_If2l_));
+    else yoLCC = 1.0 - (Ith(y,_C_) + Ith(y,_Cl_) + Ith(y,_If_) + Ith(y,_Ifl_) + Ith(y,_If2_) + Ith(y,_If2l_));
 }
 
 vetor CaRU::getVariables(){
-    vetor aux_y = vetor(_CaRU_numODE_);
-    for (int i = 0; i < _CaRU_numODE_; i++)
-        aux_y[i] = y[i];
-    return aux_y;
+    return y;
 }
 
 vetor CaRU::getDerivatives(){
-    vetor aux_dy = vetor(_CaRU_numODE_);
-    for (int i = 0; i < _CaRU_numODE_; i++)
-        aux_dy[i] = dy[i];
-    return aux_dy;
+    return dy;
 }
 
 mreal CaRU::getICaL(){
@@ -557,7 +534,7 @@ void CaRU::saveExtras(vetor save_t, string output_path){
 }
 
 //Mudei aqui para a calcBinomial3 pra ficar mais rápido!!!
-__device__ int CaRU::calcBinomial(int t, mreal p){
+int CaRU::calcBinomial(int t, mreal p){
 	// return calcBinomial_1(t,p);
     return calcBinomial_4(t,p);
 }
@@ -582,10 +559,10 @@ int CaRU::calcBinomial_3(int t, mreal p){
     return res;
 }
 
-__device__ int CaRU::calcBinomial_4(int t, mreal p){
+int CaRU::calcBinomial_4(int t, mreal p){
     int res = 0;
     for(int c=0; c<t; c++){
-        double prob = curand_uniform_double(&state); 
+        double prob = (double)rand()/RAND_MAX;
         if(prob <= p) res++;
     }
     return res;

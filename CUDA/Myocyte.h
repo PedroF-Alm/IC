@@ -27,8 +27,6 @@
 #define _r_             10
 //--------------------------------------------------
 
-
-
 class Myocyte{
 public:
 //     Myocyte();
@@ -51,8 +49,8 @@ public:
     }
 
     //----Model Definitions--   
-    const static int TT = CaRU::TT;
-    const static int TM = CaRU::TM;
+    const static int TT = 0;
+    const static int TM = 1;
     //----------------------- 
 
     //----Model Parameters---
@@ -83,8 +81,6 @@ private:
     static int xUnits;
     static int yUnits;
     static int tUnits;
-    mreal *cais;
-    mreal *casrs;
     const static mreal finishMsg;
     
     static bool isPathExist(const string &s){
@@ -181,7 +177,7 @@ private:
 
         file.close();
 
-        CaRU::generateCaUnitsPlot(outputCaUnitsFilePath);
+        // CaRU::generateCaUnitsPlot(outputCaUnitsFilePath);
     }
 
     static int getRowPos(int i){
@@ -197,23 +193,28 @@ private:
     mreal getStim(mreal t);
     mreal getTauH(vetor y);
     mreal getTauJ(vetor y);
-    void getCaruCurs();
-    // mreal getICaL();
-    // mreal getIbCa();
-    // mreal getINaCa();
-    // mreal getIpCa();
+    mreal getICaL();
+    mreal getIbCa();
+    mreal getINaCa();
+    mreal getIpCa();
     void initiateDefaultInitConditions();
     void initiateInitConditionsFromFile();
     void solveStep(mreal dt, mreal t);
     void saveVariables();
     void saveCurrents();
     void saveExtras();
+    void sendTUnitsToCaRU();
+    void getTUnitsFromMyocite(int* begin, int* end);
+    void sendDataToCaRU();
+    void getDataFromMyocyte(mreal* V, mreal* Nai, bool* save, int my_tUnits);
+    void getDataFromCaRU();
+    void sendDataToMyocyte(int my_tUnits);
+    void sendFinishToCaRU();
 
     int n_LCC, n_RyR;
     mreal t;
-    CaRU **ca_units;
-    // vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
-    CaruCurs *caru_curs;
+    CaRU *ca_units;
+    vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
     vetor y = vetor(_Myocyte_numODE_);
     vetor dy = vetor(_Myocyte_numODE_);
     vetor save_t;

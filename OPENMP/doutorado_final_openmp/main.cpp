@@ -3,7 +3,7 @@
 #include "Myocyte.h"
 
 #define	initTime	0.0e0	// ms
-#define	endTime		30.0e3	// ms
+#define	endTime		1.0e1	// ms
 #define	stepTime	1.0e-3	// ms
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1

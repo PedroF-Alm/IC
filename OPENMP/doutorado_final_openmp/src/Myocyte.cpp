@@ -1,4 +1,4 @@
-#include "../header/Myocyte.h"
+#include "Myocyte.h"
 
 const string Myocyte::initCondFilePath = "../input/initCond_Myocyte.dat";
 string Myocyte::outputFilePath = "../exit/lastSim/";
@@ -9,90 +9,89 @@ int Myocyte::tUnits = 1;
 const mreal Myocyte::finishMsg = -1.0e3;
 //------------------------------------------------------------------
 
-// Myocyte::Myocyte(){
-//     this->initiateInitConditionsFromFile();
+Myocyte::Myocyte(){
+    this->initiateInitConditionsFromFile();
 
-//     CaRU::setTUnits(tUnits);
-//     CaRU::setXUnits(xUnits);
-//     CaRU::setYUnits(yUnits);
-//     CaRU::initiateDefaultInitConditionsCaiDiff();
-//     CaRU::initiateDefaultInitConditionsCaSRDiff();
-//     //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
-// }
+    CaRU::setTUnits(tUnits);
+    CaRU::setXUnits(xUnits);
+    CaRU::setYUnits(yUnits);
+    CaRU::initiateDefaultInitConditionsCaiDiff();
+    CaRU::initiateDefaultInitConditionsCaSRDiff();
+    //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
+}
 
-// Myocyte::Myocyte(int xUnits, int yUnits){
-//     this->initiateInitConditionsFromFile();
-//     Myocyte::xUnits = xUnits;
-//     Myocyte::yUnits = yUnits;
-//     Myocyte::tUnits = (xUnits*yUnits);
+Myocyte::Myocyte(int xUnits, int yUnits){
+    this->initiateInitConditionsFromFile();
+    Myocyte::xUnits = xUnits;
+    Myocyte::yUnits = yUnits;
+    Myocyte::tUnits = (xUnits*yUnits);
 
-//     CaRU::setTUnits(tUnits);
-//     CaRU::setXUnits(xUnits);
-//     CaRU::setYUnits(yUnits);
-//     CaRU::initiateDefaultInitConditionsCaiDiff();
-//     CaRU::initiateDefaultInitConditionsCaSRDiff();
-//     //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
-// }
+    CaRU::setTUnits(tUnits);
+    CaRU::setXUnits(xUnits);
+    CaRU::setYUnits(yUnits);
+    CaRU::initiateDefaultInitConditionsCaiDiff();
+    CaRU::initiateDefaultInitConditionsCaSRDiff();
+    //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
+}
 
-// Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR){
-//     this->initiateInitConditionsFromFile();
-//     Myocyte::xUnits = xUnits;
-//     Myocyte::yUnits = yUnits;
-//     this->n_LCC = n_LCC;
-//     this->n_RyR = n_RyR;
-//     Myocyte::tUnits = (xUnits*yUnits);
+Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR){
+    this->initiateInitConditionsFromFile();
+    Myocyte::xUnits = xUnits;
+    Myocyte::yUnits = yUnits;
+    this->n_LCC = n_LCC;
+    this->n_RyR = n_RyR;
+    Myocyte::tUnits = (xUnits*yUnits);
 
-//     CaRU::setTUnits(tUnits);
-//     CaRU::setXUnits(xUnits);
-//     CaRU::setYUnits(yUnits);
-//     CaRU::initiateDefaultInitConditionsCaiDiff();
-//     CaRU::initiateDefaultInitConditionsCaSRDiff();
-//     setNLCC(n_LCC);
-//     setNRyR(n_RyR);
-//     //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
-// }
+    CaRU::setTUnits(tUnits);
+    CaRU::setXUnits(xUnits);
+    CaRU::setYUnits(yUnits);
+    CaRU::initiateDefaultInitConditionsCaiDiff();
+    CaRU::initiateDefaultInitConditionsCaSRDiff();
+    setNLCC(n_LCC);
+    setNRyR(n_RyR);
+    //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
+}
 
-// Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR){
-//     this->initiateInitConditionsFromFile();
-//     Myocyte::xUnits = xUnits;
-//     Myocyte::yUnits = yUnits;
-//     this->n_LCC = n_LCC;
-//     this->n_RyR = n_RyR;
-//     Myocyte::tUnits = (xUnits*yUnits);
+Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR){
+    this->initiateInitConditionsFromFile();
+    Myocyte::xUnits = xUnits;
+    Myocyte::yUnits = yUnits;
+    this->n_LCC = n_LCC;
+    this->n_RyR = n_RyR;
+    Myocyte::tUnits = (xUnits*yUnits);
 
-//     CaRU::setTUnits(tUnits);
-//     CaRU::setXUnits(xUnits);
-//     CaRU::setYUnits(yUnits);
-//     CaRU::initiateDefaultInitConditionsCaiDiff();
-//     CaRU::initiateDefaultInitConditionsCaSRDiff();
-//     setNLCC(n_LCC);
-//     setNRyR(n_RyR);
-//     setLCCStochastic(s_LCC);
-//     setRyRStochastic(s_RyR);
-//     //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
-// }
+    CaRU::setTUnits(tUnits);
+    CaRU::setXUnits(xUnits);
+    CaRU::setYUnits(yUnits);
+    CaRU::initiateDefaultInitConditionsCaiDiff();
+    CaRU::initiateDefaultInitConditionsCaSRDiff();
+    setNLCC(n_LCC);
+    setNRyR(n_RyR);
+    setLCCStochastic(s_LCC);
+    setRyRStochastic(s_RyR);
+    //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
+}
 
-// Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod){
-//     this->initiateInitConditionsFromFile();
-//     Myocyte::xUnits = xUnits;
-//     Myocyte::yUnits = yUnits;
-//     this->n_LCC = n_LCC;
-//     this->n_RyR = n_RyR;
-//     Myocyte::tUnits = (xUnits*yUnits);
-//     ca_units = (CaRU*) malloc(tUnits * sizeof(CaRU));
+Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod){
+    this->initiateInitConditionsFromFile();
+    Myocyte::xUnits = xUnits;
+    Myocyte::yUnits = yUnits;
+    this->n_LCC = n_LCC;
+    this->n_RyR = n_RyR;
+    Myocyte::tUnits = (xUnits*yUnits);
 
-//     CaRU::setTUnits(tUnits);
-//     CaRU::setXUnits(xUnits);
-//     CaRU::setYUnits(yUnits);
-//     CaRU::initiateDefaultInitConditionsCaiDiff();
-//     CaRU::initiateDefaultInitConditionsCaSRDiff();
-//     setNLCC(n_LCC);
-//     setNRyR(n_RyR);
-//     setLCCStochastic(s_LCC);
-//     setRyRStochastic(s_RyR);
-//     setModelVariation(mod);
-//     //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
-// }
+    CaRU::setTUnits(tUnits);
+    CaRU::setXUnits(xUnits);
+    CaRU::setYUnits(yUnits);
+    CaRU::initiateDefaultInitConditionsCaiDiff();
+    CaRU::initiateDefaultInitConditionsCaSRDiff();
+    setNLCC(n_LCC);
+    setNRyR(n_RyR);
+    setLCCStochastic(s_LCC);
+    setRyRStochastic(s_RyR);
+    setModelVariation(mod);
+    //for(int c=0; c<tUnits; c++) this->ca_units.push_back(new CaRU(c));
+}
 
 Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod, mreal DCai, mreal DCaSR){
     this->initiateInitConditionsFromFile();
@@ -101,11 +100,6 @@ Myocyte::Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool 
     this->n_LCC = n_LCC;
     this->n_RyR = n_RyR;
     Myocyte::tUnits = (xUnits*yUnits);
-    ca_units = (CaRU**) malloc(tUnits * sizeof(CaRU*));
-    for (int c = 0; c < tUnits; c++)
-        ca_units[c] = new CaRU(c);
-    cais  = (mreal*) malloc(tUnits * sizeof(mreal));
-    casrs = (mreal*) malloc(tUnits * sizeof(mreal));
 
     CaRU::setTUnits(tUnits);
     CaRU::setXUnits(xUnits);
@@ -168,8 +162,7 @@ void Myocyte::solveStep(mreal dt, mreal t){
 void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRate){
     cout << "Creating output dir." << endl;
     string command = "rm -r ";
-    if (isPathExist(outputFilePath))
-    {
+    if (isPathExist(outputFilePath)){
         command += outputFilePath;
         system(command.c_str());
     }
@@ -182,47 +175,64 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     cout << "Beginning solve Myocyte model." << endl;
     t = t0;
 
-    // caru_ical = vetor(tUnits);
-    // caru_inaca = vetor(tUnits);
-    // caru_ibca = vetor(tUnits);
-    // caru_ipca = vetor(tUnits);
+    caru_ical = 0.0;
+    caru_inaca = 0.0;
+    caru_ibca = 0.0;
+    caru_ipca = 0.0;
 
-    caru_curs = (CaruCurs*) malloc(tUnits * sizeof(CaruCurs));
+    for (int c = 0; c < tUnits; c++) ca_units.push_back(new CaRU(c));
 
-    double total_time = 0;
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    double caru_solve_time = 0, caru_diff_time = 0, myocyte_solve_time = 0;
+    auto begin = chrono::high_resolution_clock::now(), end = chrono::high_resolution_clock::now();      
+    double pBegin, pEnd;
 
     for (int c = 0; t < tF; c++)
     {
         toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
         if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
-            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << "\t Elapsed carus solve time (s): " << total_time << endl;
+            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << endl;
         if (toSave)
         {
             save_t.push_back(t);
             save_y.push_back(y);
-            // cout << save_t.size() << endl;
         }
 
-        CaRU::setV(Ith(y,_V_));
-        CaRU::setNai(Ith(y,_Nai_));
+        for (int u = 0; u < tUnits; u++)
+        {
+            CaRU::setCaiDiffValue(u, ca_units.at(u)->getCai());
+            CaRU::setCaSRDiffValue(u, ca_units.at(u)->getCaSR());
+            if (CaRU::getCaiDiffValue(u) > -1.)
+                ca_units.at(u)->setCai(CaRU::getCaiDiffValue(u));
+            if (CaRU::getCaSRDiffValue(u) > -1.)
+                ca_units.at(u)->setCaSR(CaRU::getCaSRDiffValue(u));
+        }
+
+        CaRU::setV(Ith(y, _V_));
+        CaRU::setNai(Ith(y, _Nai_));
         CaRU::setSave(toSave);
-        
-        cudaEventRecord(start);
-        solveCaRUStep<<<xUnits, yUnits>>>(ca_units, tUnits, dt, Ith(y, _V_), Ith(y, _Nai_), toSave, cais, casrs, caru_curs);
-        cudaDeviceSynchronize();
-        cudaEventRecord(stop);
-        cudaEventSynchronize(stop);
 
-        float milliseconds;
-        cudaEventElapsedTime(&milliseconds, start, stop);
-        total_time += milliseconds / 1000.0f;
+        pBegin = omp_get_wtime();
 
+        #pragma omp for schedule(static, tUnits / omp_get_num_threads())
+        for (int c = 0; c < tUnits; c++) {
+            ca_units.at(c)->solveStep(dt);
+        }
+
+        pEnd = omp_get_wtime();
+
+        caru_solve_time += pEnd - pBegin;
+
+        begin = chrono::high_resolution_clock::now();
         solveStep(dt, t);
+        end = chrono::high_resolution_clock::now();
 
-        CaRU::applyDiffusions(cais, casrs, dt);
+        myocyte_solve_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
+
+        begin = chrono::high_resolution_clock::now();
+        CaRU::applyDiffusions(dt);
+        end = chrono::high_resolution_clock::now();
+
+        caru_diff_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
 
         if (toSave)
         {
@@ -231,40 +241,21 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
             curs.push_back(I_to);
             curs.push_back(I_Kr);
             curs.push_back(I_Ks);
-            // curs.push_back(0.0);
             curs.push_back(I_CaL);
             curs.push_back(I_NaK);
             curs.push_back(I_Na);
             curs.push_back(I_bNa);
-            // curs.push_back(0.0);
             curs.push_back(I_NaCa);
-            // curs.push_back(0.0);
             curs.push_back(I_bCa);
             curs.push_back(I_pK);
-            // curs.push_back(0.0);
             curs.push_back(I_pCa);
             curs.push_back(I_Stim);
             save_c.push_back(curs);
-            
-            for (int i = 0; i < tUnits; i++)
-            {
-                vetor aux_y = vetor(_CaRU_numODE_), aux_curs = vetor(8), aux_extras = vetor(5);
-                for (int j = 0; j < _CaRU_numODE_; j++)
-                    aux_y[j] = ca_units[i]->y[j];
-                for (int j = 0; j < 8; j++)
-                    aux_curs[j] = ca_units[i]->curs[j];
-                for (int j = 0; j < 5; j++)
-                    aux_extras[j] = ca_units[i]->extras[j];
-                ca_units[i]->save_y.push_back(aux_y);
-                ca_units[i]->save_c.push_back(aux_curs);
-                ca_units[i]->save_e.push_back(aux_extras);
-            }
 
-            // save_t.push_back(t);
-
-            CaRU::saveCaiDiffMatrix(cais, outputCaUnitsFilePath, t);
-            CaRU::saveCaSRDiffMatrix(casrs, outputCaUnitsFilePath, t);
+            CaRU::saveCaiDiffMatrix(outputCaUnitsFilePath, t);
+            CaRU::saveCaSRDiffMatrix(outputCaUnitsFilePath, t);
         }
+
         // if(saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0){
         //     vetor extras;
         //     save_e.push_back(extras);
@@ -273,22 +264,9 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     }
 
     cout << "Fineshed solving." << endl;
-    if (saveRate > 0.0)
-    {
-        cout << "Saving variables results." << endl;
-        for (int c = 0; c < tUnits; c++)
-            ca_units[c]->saveVariables(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
-        cout << "Saving Currents results." << endl;
-        for (int c = 0; c < tUnits; c++)
-            ca_units[c]->saveCurrents(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
-        cout << "Saving Extra results." << endl;
-        for (int c = 0; c < tUnits; c++)
-            ca_units[c]->saveExtras(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
-        cout << "Blocks -> The End\n" << endl;
 
+    if (saveRate > 0.0){
+        // Myocyte savings
         cout << "Saving variables results." << endl;
         saveVariables();
         cout << "Fineshed saving." << endl;
@@ -305,14 +283,28 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
         command = "(cd " + outputCaUnitsFilePath + "/;python plot.py)";
         system(command.c_str());
         cout << "Fineshed plotting." << endl;
+
+        // CaRUs savings
+        cout << "Saving variables results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveVariables(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Currents results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveCurrents(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
+        cout << "Saving Extra results." << endl;
+        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveExtras(save_t, outputCaUnitsFilePath);
+        cout << "Fineshed saving." << endl;
     }
 
-    cout << "Core -> The End." << endl;
-    printf("Time to generate:  %.6lf s \n", total_time);
+    for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
 
-    free(cais);
-    free(casrs);
-    free(caru_curs);
+    ofstream file;
+    file.open("6_thread(s).txt", ios::app);
+    file.precision(8);
+    file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
+    file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
+    file << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n\n";
+    file.close();
 }
 
 void Myocyte::solveAlgEquations(mreal dt, mreal t){
@@ -357,11 +349,14 @@ void Myocyte::solveAlgEquations(mreal dt, mreal t){
     I_to = g_to*Ith(y,_r_)*Ith(y,_s_)*(Ith(y,_V_) - E_K);
     I_Kr = g_Kr*sqrt(K_o/5.4)*Ith(y,_Xr1_)*Ith(y,_Xr2_)*(Ith(y,_V_) - E_K);
     I_Ks = g_Ks*pow(Ith(y,_Xs_),2.)*(Ith(y,_V_) - E_Ks);
+    I_CaL = getICaL();
     I_NaK = P_NaK*(K_o/(K_o + K_mk))*(Ith(y,_Nai_)/(Ith(y,_Nai_)+K_mNa))*rec_iNaK;
     I_Na = g_Na*pow(Ith(y,_m_),3.)*Ith(y,_h_)*Ith(y,_j_)*(Ith(y,_V_) - E_Na);
     I_bNa = g_bna*(Ith(y,_V_) - E_Na);
+    I_NaCa = getINaCa();
+    I_bCa = getIbCa();
     I_pK = g_pK*rec_ipK*(Ith(y,_V_)-E_K);
-    getCaruCurs();
+    I_pCa = getIpCa();
     I_Stim = getStim(t);
 }
 
@@ -385,59 +380,41 @@ void Myocyte::calcDerivatives(mreal dt, mreal t){
     Ith(dy,_r_) = (r_inf - Ith(y,_r_))/(tau_r);
 }
 
-void Myocyte::getCaruCurs() {
-    I_CaL = 0;
-    I_bCa = 0;
-    I_NaCa = 0;
-    I_pCa = 0;
+mreal Myocyte::getICaL(){
+    mreal all_Curs = 0.0;
 
-    for(int c=0; c<tUnits; c++) {
-        I_CaL += caru_curs[c].ICal;
-        I_bCa += caru_curs[c].IbCa;
-        I_NaCa += caru_curs[c].INaCa;
-        I_pCa += caru_curs[c].IpCa;
-    }
-    I_CaL /= (mreal)tUnits;
-    I_bCa /= (mreal)tUnits;
-    I_NaCa /= (mreal)tUnits;
-    I_pCa /= (mreal)tUnits;
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getICaL();
+    all_Curs /= (mreal)tUnits;
+
+    return all_Curs;
 }
 
-// mreal Myocyte::getICal(){
-//     mreal all_Curs = 0.0;
+mreal Myocyte::getIbCa(){
+    mreal all_Curs = 0.0;
 
-//     for(int c=0; c<tUnits; c++) all_Curs += ca_units[c]->getICal();
-//     all_Curs /= (mreal)tUnits;
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getIbCa();
+    all_Curs /= (mreal)tUnits;
 
-//     return all_Curs;
-// }
+    return all_Curs;
+}
 
-// mreal Myocyte::getIbCa(){
-//     mreal all_Curs = 0.0;
+mreal Myocyte::getINaCa(){
+    mreal all_Curs = 0.0;
 
-//     for(int c=0; c<tUnits; c++) all_Curs += ca_units[c]->getIbCa();
-//     all_Curs /= (mreal)tUnits;
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getINaCa();
+    all_Curs /= (mreal)tUnits;
 
-//     return all_Curs;
-// }
+    return all_Curs;
+}
 
-// mreal Myocyte::getINaCa(){
-//     mreal all_Curs = 0.0;
+mreal Myocyte::getIpCa(){
+    mreal all_Curs = 0.0;
 
-//     for(int c=0; c<tUnits; c++) all_Curs += ca_units[c]->getINaCa();
-//     all_Curs /= (mreal)tUnits;
+    for(int c=0; c<tUnits; c++) all_Curs += ca_units.at(c)->getIpCa();
+    all_Curs /= (mreal)tUnits;
 
-//     return all_Curs;
-// }
-
-// mreal Myocyte::getIpCa(){
-//     mreal all_Curs = 0.0;
-
-//     for(int c=0; c<tUnits; c++) all_Curs += ca_units[c]->getIpCa();
-//     all_Curs /= (mreal)tUnits;
-
-//     return all_Curs;
-// }
+    return all_Curs;
+}
 
 mreal Myocyte::getStim(mreal t){
     if(((t >= stim_start) && (t <= stim_end) && (((t - stim_start) - (floor(((t - stim_start)/stim_period))*stim_period)) <= stim_duration))) {
@@ -503,7 +480,6 @@ void Myocyte::saveVariables(){
             for(int c1=0; c1<save_y.at(c).size()-1;c1++) file<<save_y.at(c).at(c1)<<"\t";
             file<<save_y.at(c).at(save_y.at(c).size()-1)<<endl;
         }
-        
         file.close();
     }
     else cout << "Unable to open file './output_vars.dat'"<<endl;
@@ -558,6 +534,5 @@ void Myocyte::saveExtras(){
 }
 
 Myocyte::~Myocyte(){
-    for(int c=0; c<tUnits; c++) delete ca_units[c];
-        free(ca_units);
+    //for(int c=0; c<tUnits; c++) delete this->ca_units.at(c);
 }

@@ -182,94 +182,57 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
 
     for (int c = 0; c < tUnits; c++) ca_units.push_back(new CaRU(c));
 
-    double caru_solve_time = 0, caru_diff_time = 0, myocyte_solve_time = 0;
-    auto begin = chrono::high_resolution_clock::now(), end = chrono::high_resolution_clock::now();      
-    double pBegin, pEnd;
-
-    #pragma omp parallel num_threads(6) default(shared) reduction(+: t)
-    {
-        for (int c = 0; t < tF; c++){
-
-            #pragma omp master 
-            {
-                toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
-                if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
-                    cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << endl;
-                if (toSave){
-                    save_t.push_back(t);
-                    save_y.push_back(y);
-                }
-
-                for(int u=0; u<tUnits; u++){
-                    CaRU::setCaiDiffValue(u, ca_units.at(u)->getCai());
-                    CaRU::setCaSRDiffValue(u, ca_units.at(u)->getCaSR());
-                    if(CaRU::getCaiDiffValue(u) > -1.) ca_units.at(u)->setCai(CaRU::getCaiDiffValue(u));
-                    if(CaRU::getCaSRDiffValue(u) > -1.) ca_units.at(u)->setCaSR(CaRU::getCaSRDiffValue(u));
-                }
-
-                CaRU::setV(Ith(y,_V_));
-                CaRU::setNai(Ith(y,_Nai_));
-                CaRU::setSave(toSave);
-
-                pBegin = omp_get_wtime();    
-            }
-        
-            #pragma omp for schedule(static, tUnits / omp_get_num_threads())
-            for (int c = 0; c < tUnits; c++) {    
-                ca_units.at(c)->solveStep(dt);
-            }
-            
-            #pragma omp master
-            {
-                pEnd = omp_get_wtime();    
-
-                caru_solve_time += pEnd - pBegin;
-
-                begin = chrono::high_resolution_clock::now();
-                solveStep(dt, t);
-                end = chrono::high_resolution_clock::now();
-
-                myocyte_solve_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
-
-                begin = chrono::high_resolution_clock::now();
-                CaRU::applyDiffusions(dt);
-                end = chrono::high_resolution_clock::now();
-
-                caru_diff_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
-
-                if (toSave){
-                    vetor curs;
-                    curs.push_back(I_K1);
-                    curs.push_back(I_to);
-                    curs.push_back(I_Kr);
-                    curs.push_back(I_Ks);
-                    curs.push_back(I_CaL);
-                    curs.push_back(I_NaK);
-                    curs.push_back(I_Na);
-                    curs.push_back(I_bNa);
-                    curs.push_back(I_NaCa);
-                    curs.push_back(I_bCa);
-                    curs.push_back(I_pK);
-                    curs.push_back(I_pCa);
-                    curs.push_back(I_Stim);
-                    save_c.push_back(curs);
-
-                    CaRU::saveCaiDiffMatrix(outputCaUnitsFilePath, t);
-                    CaRU::saveCaSRDiffMatrix(outputCaUnitsFilePath, t);
-                }
-            }
-            // if(saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0){
-            //     vetor extras;
-            //     save_e.push_back(extras);
-            // }
-            t += dt;
+    for (int c = 0; t < tF; c++){
+        toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
+        if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
+            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << endl;
+        if (toSave){
+            save_t.push_back(t);
+            save_y.push_back(y);
         }
+
+        if (Ith(y,_V_) > -0.5e3) {
+            CaRU::setV(Ith(y,_V_));
+            CaRU::setNai(Ith(y,_Nai_));
+            
+            for (int c = 0; c < tUnits; c++) {              
+                ca_units.at(c)->solveStep(dt);
+            }            
+        }
+                
+        solveStep(dt, t);
+        CaRU::applyDiffusions(dt);
+
+        if (toSave){
+            vetor curs;
+            curs.push_back(I_K1);
+            curs.push_back(I_to);
+            curs.push_back(I_Kr);
+            curs.push_back(I_Ks);
+            curs.push_back(I_CaL);
+            curs.push_back(I_NaK);
+            curs.push_back(I_Na);
+            curs.push_back(I_bNa);
+            curs.push_back(I_NaCa);
+            curs.push_back(I_bCa);
+            curs.push_back(I_pK);
+            curs.push_back(I_pCa);
+            curs.push_back(I_Stim);
+            save_c.push_back(curs);
+
+            CaRU::saveCaiDiffMatrix(outputCaUnitsFilePath, t);
+            CaRU::saveCaSRDiffMatrix(outputCaUnitsFilePath, t);
+        }
+        // if(saveRate > 0.0 and c%(int)((1.0/saveRate)) == 0){
+        //     vetor extras;
+        //     save_e.push_back(extras);
+        // }
+        t += dt;
     }
 
     cout << "Fineshed solving." << endl;
 
     if (saveRate > 0.0){
-        // Myocyte savings
         cout << "Saving variables results." << endl;
         saveVariables();
         cout << "Fineshed saving." << endl;
@@ -286,28 +249,9 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
         command = "(cd " + outputCaUnitsFilePath + "/;python plot.py)";
         system(command.c_str());
         cout << "Fineshed plotting." << endl;
-
-        // CaRUs savings
-        cout << "Saving variables results." << endl;
-        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveVariables(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
-        cout << "Saving Currents results." << endl;
-        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveCurrents(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
-        cout << "Saving Extra results." << endl;
-        for (int c = 0; c < tUnits; c++) ca_units.at(c)->saveExtras(save_t, outputCaUnitsFilePath);
-        cout << "Fineshed saving." << endl;
     }
 
     for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
-
-    ofstream file;
-    file.open("6_thread(s).txt", ios::app);
-    file.precision(8);
-    file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
-    file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
-    file << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n\n";
-    file.close();
 }
 
 void Myocyte::solveAlgEquations(mreal dt, mreal t){
