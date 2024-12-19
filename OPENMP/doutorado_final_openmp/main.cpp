@@ -3,7 +3,7 @@
 #include "Myocyte.h"
 
 #define	initTime	0.0e0	// ms
-#define	endTime		1.0e1	// ms
+#define	endTime		30.0e3	// ms
 #define	stepTime	1.0e-3	// ms
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1
@@ -29,7 +29,6 @@ int main(int argc, char* argv[]){
 	// srandom(seed);x
 
 	auto begin = chrono::high_resolution_clock::now();
-	ios_base::sync_with_stdio(false);
 
 	string arg = argv[1];
 	string arg1 = argv[2];
@@ -48,13 +47,13 @@ int main(int argc, char* argv[]){
 
 	auto end = chrono::high_resolution_clock::now();
 
-	auto duration = chrono::duration_cast<chrono::nanoseconds>(end - begin);
+    double total_time = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
 
-	ofstream file;
-    file.open("6_thread(s).txt", ios::app);
+    ofstream file;
+	file.open("/home/lince/Documentos/IC/testes/tempos/openmp.txt", ios::app);
     file.precision(8);
-	file << "main: " << fixed << (duration.count() * 1e-9)<< "s\n";
-	file.close();
+    file << "\nMain: " << fixed << total_time << "s\n\n";
+    file.close();
 
     return 0;
 }

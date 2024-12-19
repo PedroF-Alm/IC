@@ -1,4 +1,5 @@
 .vscode
 build
 doutorado_final_mpi
-testes.sh
+teste.sh
+testes/

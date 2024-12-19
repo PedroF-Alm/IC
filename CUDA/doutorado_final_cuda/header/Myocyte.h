@@ -27,13 +27,15 @@
 #define _r_             10
 //--------------------------------------------------
 
+
+
 class Myocyte{
 public:
-    Myocyte();
-    Myocyte(int xUnits, int yUnits);
-    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR);
-    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR);
-    Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod);
+//     Myocyte();
+//     Myocyte(int xUnits, int yUnits);
+//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR);
+//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR);
+//     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod);
     Myocyte(int xUnits, int yUnits, int n_LCC, int n_RyR, bool s_LCC, bool s_RyR, int mod, mreal DCai, mreal DCaSR);
     void setNLCC(int n_LCC);
     void setNRyR(int n_RyR);
@@ -81,6 +83,8 @@ private:
     static int xUnits;
     static int yUnits;
     static int tUnits;
+    mreal *cais;
+    mreal *casrs;
     const static mreal finishMsg;
     
     static bool isPathExist(const string &s){
@@ -131,30 +135,30 @@ private:
         file<<"        cur.append(data)"<<endl;
         file<<"cur = np.array(cur)"<<endl;
         file<<endl;
-        file<<"tt = []"<<endl;
-        file<<"with open('../data_TT/output_extras.dat', 'r') as file_e:"<<endl;
-        file<<"    with open('../data_TT/output_vars.dat', 'r') as file_v:"<<endl;
-        file<<"        lines_e = csv.reader (file_e,delimiter='\t')"<<endl;
-        file<<"        lines_v = csv.reader (file_v,delimiter='\t')"<<endl;
-        file<<"        for row_e,row_v in zip(lines_e,lines_v):"<<endl;
-        file<<"            data = []"<<endl;
-        file<<"            for i in range (len(row_e)):"<<endl;
-        file<<"                if(i == 0):"<<endl;
-        file<<"                    data.append(float(row_e[i])/1000.)"<<endl;
-        file<<"                elif(i == 1):"<<endl;
-        file<<"                    data.append(float(row_e[i])*1000.)"<<endl;
-        file<<"                else:"<<endl;
-        file<<"                    data.append(float(row_e[i]))"<<endl;
-        file<<"            for i in range (len(row_v)):"<<endl;
-        file<<"                data.append(float(row_v[i]))"<<endl;
-        file<<"            tt.append(data)"<<endl;
-        file<<"tt = np.array(tt)"<<endl;
+        file<<"#tt = []"<<endl;
+        file<<"#with open('../data_TT/output_extras.dat', 'r') as file_e:"<<endl;
+        file<<"#    with open('../data_TT/output_vars.dat', 'r') as file_v:"<<endl;
+        file<<"#        lines_e = csv.reader (file_e,delimiter='\t')"<<endl;
+        file<<"#        lines_v = csv.reader (file_v,delimiter='\t')"<<endl;
+        file<<"#        for row_e,row_v in zip(lines_e,lines_v):"<<endl;
+        file<<"#            data = []"<<endl;
+        file<<"#            for i in range (len(row_e)):"<<endl;
+        file<<"#                if(i == 0):"<<endl;
+        file<<"#                    data.append(float(row_e[i])/1000.)"<<endl;
+        file<<"#                elif(i == 1):"<<endl;
+        file<<"#                    data.append(float(row_e[i])*1000.)"<<endl;
+        file<<"#                else:"<<endl;
+        file<<"#                    data.append(float(row_e[i]))"<<endl;
+        file<<"#            for i in range (len(row_v)):"<<endl;
+        file<<"#                data.append(float(row_v[i]))"<<endl;
+        file<<"#            tt.append(data)"<<endl;
+        file<<"#tt = np.array(tt)"<<endl;
         file<<"##########################################"<<endl;
         file<<endl;
         file<<"#AP#######################################"<<endl;
         file<<"plt.figure()"<<endl;
         file<<"plt.plot(var[:,0],var[:,1],color=lineSimColor)"<<endl;
-        file<<"plt.plot(tt[:,0],tt[:,7],color=lineOriColor)"<<endl;
+        file<<"#plt.plot(tt[:,0],tt[:,7],color=lineOriColor)"<<endl;
         file<<"plt.xlim(0,0.5)"<<endl;
         file<<"# plt.ylim(0,1)"<<endl;
         file<<"plt.grid(ls=':')"<<endl;
@@ -166,7 +170,7 @@ private:
         file<<"#ICaL######################################"<<endl;
         file<<"plt.figure()"<<endl;
         file<<"plt.plot(cur[:,0],cur[:,5],color=lineSimColor)"<<endl;
-        file<<"plt.plot(tt[:,0],tt[:,5],color=lineOriColor)"<<endl;
+        file<<"#plt.plot(tt[:,0],tt[:,5],color=lineOriColor)"<<endl;
         file<<"plt.xlim(0,0.5)"<<endl;
         file<<"# plt.ylim(0,1)"<<endl;
         file<<"plt.grid(ls=':')"<<endl;
@@ -193,28 +197,23 @@ private:
     mreal getStim(mreal t);
     mreal getTauH(vetor y);
     mreal getTauJ(vetor y);
-    mreal getICaL();
-    mreal getIbCa();
-    mreal getINaCa();
-    mreal getIpCa();
+    void getCaruCurs();
+    // mreal getICaL();
+    // mreal getIbCa();
+    // mreal getINaCa();
+    // mreal getIpCa();
     void initiateDefaultInitConditions();
     void initiateInitConditionsFromFile();
     void solveStep(mreal dt, mreal t);
     void saveVariables();
     void saveCurrents();
     void saveExtras();
-    void sendTUnitsToCaRU();
-    void getTUnitsFromMyocite(int* begin, int* end);
-    void sendDataToCaRU();
-    void getDataFromMyocyte(mreal* V, mreal* Nai, bool* save, int my_tUnits);
-    void getDataFromCaRU();
-    void sendDataToMyocyte(int my_tUnits);
-    void sendFinishToCaRU();
 
     int n_LCC, n_RyR;
     mreal t;
-    vector<CaRU*> ca_units;
-    vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
+    CaRU **ca_units;
+    // vetor caru_ical, caru_inaca, caru_ibca, caru_ipca;
+    CaruCurs *caru_curs;
     vetor y = vetor(_Myocyte_numODE_);
     vetor dy = vetor(_Myocyte_numODE_);
     vetor save_t;

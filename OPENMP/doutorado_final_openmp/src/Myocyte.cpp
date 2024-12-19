@@ -299,7 +299,7 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
 
     ofstream file;
-    file.open("6_thread(s).txt", ios::app);
+    file.open("/home/lince/Documentos/IC/testes/tempos/openmp.txt", ios::app);
     file.precision(8);
     file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
     file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";

@@ -189,7 +189,9 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
 
     caru_curs = (CaruCurs*) malloc(tUnits * sizeof(CaruCurs));
 
-    double total_time = 0;
+    double caru_solve_time = 0, caru_diff_time = 0, myocyte_solve_time = 0;
+    auto begin = chrono::high_resolution_clock::now(), end = chrono::high_resolution_clock::now();      
+
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
@@ -198,7 +200,7 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     {
         toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
         if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
-            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << "\t Elapsed carus solve time (s): " << total_time << endl;
+            cout << "Grid: " << xUnits << "x" << yUnits << "\t n_LCC: " << n_LCC << "\t" << "Time (ms):" << t << endl;
         if (toSave)
         {
             save_t.push_back(t);
@@ -218,11 +220,20 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
 
         float milliseconds;
         cudaEventElapsedTime(&milliseconds, start, stop);
-        total_time += milliseconds / 1000.0f;
+        
+        caru_solve_time += milliseconds / 1000.0f;
 
+        begin = chrono::high_resolution_clock::now();      
         solveStep(dt, t);
+        end = chrono::high_resolution_clock::now();      
 
+        myocyte_solve_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
+
+        begin = chrono::high_resolution_clock::now();      
         CaRU::applyDiffusions(cais, casrs, dt);
+        end = chrono::high_resolution_clock::now();      
+
+        caru_diff_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
 
         if (toSave)
         {
@@ -308,7 +319,14 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     }
 
     cout << "Core -> The End." << endl;
-    printf("Time to generate:  %.6lf s \n", total_time);
+    
+    ofstream file;
+    file.open("/home/lince/Documentos/IC/testes/tempos/cuda.txt", ios::app);
+    file.precision(8);
+    file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
+    file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
+    file << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n\n";
+    file.close();
 
     free(cais);
     free(casrs);

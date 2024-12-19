@@ -3,13 +3,13 @@
 #include "header/Myocyte.h"
 
 #define	initTime	0.0e0	// ms
-#define	endTime		1.0e2	// ms
+#define	endTime		30.0e3	// ms
 #define	stepTime	1.0e-3	// ms
 #define	printRate	1.0e-4	// 1
 #define	saveRate	1.0e-3 	// 1
 
-#define xUnits		8
-#define yUnits		8
+#define xUnits		64
+#define yUnits		64
 #define n_LCC		-1
 #define n_RyR		n_LCC*5
 #define s_LCC		true
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
 	// srandom(time(NULL));
 	// srandom(seed);
 
-	MPI_Init(NULL, NULL);
+	auto begin = chrono::high_resolution_clock::now();
 
 	string arg = argv[1];
 	string arg1 = argv[2];
@@ -45,7 +45,15 @@ int main(int argc, char* argv[]){
 
 	delete m;
 
-	MPI_Finalize();
+	auto end = chrono::high_resolution_clock::now();
 
+    double total_time = chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
+
+    ofstream file;
+	file.open("/home/lince/Documentos/IC/testes/tempos/cuda.txt", ios::app);
+    file.precision(8);
+    file << "\nMain: " << fixed << total_time << "s\n\n";
+    file.close();
+	
     return 0;
 }

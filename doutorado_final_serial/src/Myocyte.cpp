@@ -182,6 +182,9 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
 
     for (int c = 0; c < tUnits; c++) ca_units.push_back(new CaRU(c));
 
+    double caru_solve_time = 0, caru_diff_time = 0, myocyte_solve_time = 0;
+    auto begin = chrono::high_resolution_clock::now(), end = chrono::high_resolution_clock::now();      
+
     for (int c = 0; t < tF; c++){
         toSave = (saveRate > 0.0 and c % (int)((1.0 / saveRate)) == 0);
         if (printRate > 0.0 and c % (int)((1.0 / printRate)) == 0)
@@ -194,14 +197,27 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
         if (Ith(y,_V_) > -0.5e3) {
             CaRU::setV(Ith(y,_V_));
             CaRU::setNai(Ith(y,_Nai_));
-            
+
+            begin = chrono::high_resolution_clock::now();
             for (int c = 0; c < tUnits; c++) {              
                 ca_units.at(c)->solveStep(dt);
             }            
+            end = chrono::high_resolution_clock::now();
+            
+            caru_solve_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
         }
                 
+        begin = chrono::high_resolution_clock::now();
         solveStep(dt, t);
+        end = chrono::high_resolution_clock::now();
+        
+        myocyte_solve_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
+
+        begin = chrono::high_resolution_clock::now();
         CaRU::applyDiffusions(dt);
+        end = chrono::high_resolution_clock::now();
+        
+        caru_diff_time += chrono::duration_cast<chrono::nanoseconds>(end - begin).count() * 1e-9;
 
         if (toSave){
             vetor curs;
@@ -252,6 +268,14 @@ void Myocyte::solve(mreal dt, mreal t0, mreal tF, mreal printRate, mreal saveRat
     }
 
     for (int c = 0; c < tUnits; c++) delete ca_units.at(c);
+
+    ofstream file;
+    file.open("/home/lince/Documentos/IC/testes/tempos/serial.txt", ios::app);
+    file.precision(8);
+    file << "\nCaRUs solving time: " << fixed << caru_solve_time << "s\n";
+    file << "Myocyte solving time: " << fixed << myocyte_solve_time << "s\n";
+    file << "CaRUs diffusion time: " << fixed << caru_diff_time << "s\n\n";
+    file.close();
 }
 
 void Myocyte::solveAlgEquations(mreal dt, mreal t){
